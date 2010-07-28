@@ -145,6 +145,7 @@ The End
 #include "msequenceserver.h"
 #include "xmltaxonomy.h"
 #include <ctime>
+#include <string.h>
 
 msequenceServer::msequenceServer(void)
 {

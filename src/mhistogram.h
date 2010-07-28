@@ -131,6 +131,8 @@ The End
 #ifndef MHISTOGRAM_H
 #define MHISTOGRAM_H
 
+#include <string.h>
+
 // File version: 2003-07-01
 
 /*
