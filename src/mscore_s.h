@@ -42,6 +42,22 @@ public:
     virtual void report_score(char* _buff, float _h); // format hyper score for output
 
     virtual bool clear();
+    /* Thu, Apr 22, 2010 at 9:26 AM on spctools-discuss, Brendan M said:
+    I took a quick look at the code, and this function appears to be
+    related to new handling for phosphorylation.  It looked to me like you
+    could just implement the function in k-score, and return zero without
+    any ill effects, unless you are trying to use the new phosphorylation
+    functionality.  Then all bets are off, without someone really
+    understanding the meaning of this function and how the multipliers
+    applied to the score when ion_check is non-zero apply to k-score, and
+    then testing a real implementation.
+    But, I think you can compile and use it with just a zero returning
+    function.
+    */
+    float ion_check(long unsigned int foo, size_t bar) {
+        return 0.0f;  // cross your fingers
+    }
+
 
 protected:
     virtual double dot(unsigned long *_v); // this is where the real scoring happens
