@@ -190,12 +190,20 @@ bool mrefine::initialize(){
 		a++;
 	}
 	strKey = "refine, modification mass";
-	
-	if(m_pProcess->m_xmlValues.get(strKey,strValue))	{
-		if(strValue.size() > 0)	{
-			m_pProcess->m_pScore->m_seqUtil.modify_all(strValue);
-			m_pProcess->m_pScore->m_seqUtilAvg.modify_all(strValue);
+	if(m_pProcess->m_xmlValues.get(strKey,strValue) && strValue.size() > 0)	{
+		m_pProcess->m_vstrModifications.clear();
+		m_pProcess->m_vstrModifications.push_back(strValue);
+		int b = 1;
+		char *pLine = new char[256];
+		sprintf(pLine,"refine, modification mass %i",b);
+		strKey = pLine;
+		while(m_pProcess->m_xmlValues.get(strKey,strValue) && strValue.size() > 0) {
+			m_pProcess->m_vstrModifications.push_back(strValue);
+			b++;
+			sprintf(pLine,"refine, modification mass %i",b);
+			strKey = pLine;
 		}
+		delete pLine;
 	}
 	m_pProcess->m_tRefineInput = m_pProcess->m_vSpectra.size() - m_pProcess->m_tActive;
 	return true;
@@ -253,7 +261,7 @@ bool mrefine::refine()
 	}
 	m_pPMods->set_mprocess(m_pProcess);
 	m_pPMods->refine();
-	iRound++;
+	iRound = 3;
 	m_pProcess->set_round(iRound); // round 3
 	
 /*
@@ -282,7 +290,7 @@ bool mrefine::refine()
 		m_pXXCleavage->refine();
 	}
 
-	iRound++;
+	iRound = 4;
 	m_pProcess->set_round(iRound); // round 4
 /*
  *  3. check for modified peptide N-terminii
@@ -316,7 +324,7 @@ bool mrefine::refine()
 	m_pProcess->m_lStartMax = lStartMax;
 	m_pProcess->m_pScore->m_seqUtil.m_pdAaMod['['] = 0.0;
 
-	iRound++;
+	iRound = 5;
 	m_pProcess->set_round(iRound); // round 5
 /*
  *  4. check for modified peptide C-terminii
@@ -336,7 +344,7 @@ bool mrefine::refine()
 	m_pProcess->m_bRefineCterm = false;
 	m_pProcess->m_pScore->m_seqUtil.m_pdAaMod[']'] = 0.0;
 
-	iRound++;
+	iRound = 6;
 	m_pProcess->set_round(iRound); // round 6
 /*
  * 5. check for point mutations in the sequences

@@ -159,7 +159,6 @@ void SAXBiomlHandler::startElement(const XML_Char *el, const XML_Char **attr)
 		string strValue;
 		strValue = getAttrValue("label", attr);
 		m_seqCurrent.m_strSeq.erase(0,m_seqCurrent.m_strSeq.size());
-		m_seqCurrent.m_strPath.erase(0,m_seqCurrent.m_strPath.size());
 		m_seqCurrent.m_strDes = strValue;
 		m_seqCurrent.m_bForward = true;
 		if(strValue.find(":reversed") != strValue.npos)	{
@@ -171,7 +170,23 @@ void SAXBiomlHandler::startElement(const XML_Char *el, const XML_Char **attr)
 	else if(isElement("file", el) && m_bProtein){
 		string strValue;
 		strValue = getAttrValue("URL", attr);
-		m_seqCurrent.m_strPath = strValue;
+		short int iPath = 0;
+		if(m_setPaths.find(strValue) == m_setPaths.end())	{
+			m_setPaths.insert(strValue);
+			iPath = (short int) m_vstrPaths.size();
+			m_vstrPaths.push_back(strValue);
+		}
+		else	{
+			size_t a = 0;
+			while(a < m_vstrPaths.size())	{
+				if(m_vstrPaths[a] == strValue)	{
+					iPath = (short int) a;
+					break;
+				}
+				a++;
+			}
+		}
+		m_seqCurrent.m_siPath = iPath;
 	}
 	else if(isElement("peptide", el)){
 		m_bPeptide = true;

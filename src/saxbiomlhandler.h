@@ -183,6 +183,8 @@ public:
 
 	vector<msequence> m_vseqBest; // a vector of msequences used in the model refinement process
 	set<size_t> m_setSeq;
+	set<string> m_setPaths;
+	vector<string> m_vstrPaths;
 private:
 	// Flags indicating parser is inside a particular tag.
 	bool m_bProtein;

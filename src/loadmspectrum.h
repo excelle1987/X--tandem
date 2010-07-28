@@ -144,17 +144,50 @@ compatibility with non-standard file formats.
 class loadmspectrum
 {
 public:
-	loadmspectrum(void) { m_tId = 0; m_cEol = 0x0A; m_tSize = 1024*32;}
+	loadmspectrum(void) { m_tId = 0; m_cEol = 0x0A; m_tSize = 4096*4096;}
 	virtual ~loadmspectrum(void) { }
 
 	size_t m_tId; // the id number of a spectrum
 	std::streamsize m_tSize;
 	string m_strPath; // the path information for the data file
-
+	string m_strTest;
 	virtual bool get() {return true; }
 	virtual bool get(mspectrum &_m) {return true; } // retrieves a single spectrum from a data file
 	virtual bool open(string &_s) {return true; } // attaches the data file to m_ifIn and checks formats
 	virtual bool open_force(string &_s) {return true; } // attaches the data file to m_ifIn and checks formats
+	int load_test(const char *_p)	{
+		m_ifIn.open(m_strPath.c_str());
+		if(m_ifIn.fail())	{
+			cout << "<br>Fatal error: input file could not be opened.<BR>";
+			return 0;
+		}
+		/*
+		 * test for the file extension .mzdata
+		 */
+		string strTest = m_strPath;
+		int (*pf)(int) = tolower; 
+		transform(strTest.begin(), strTest.end(), strTest.begin(), pf); 
+		if(strTest.find(_p) != strTest.npos)	{
+			m_ifIn.close();
+			return 2;
+		}
+		m_strTest.clear();
+		size_t tBuffer = 128*1024;
+		char *pLine = new char[tBuffer];
+		memset((void *)pLine,'\0',tBuffer);
+		m_ifIn.getline(pLine,tBuffer,'\n');
+		m_strTest += pLine;
+		while(m_ifIn.good() && !m_ifIn.eof() && m_strTest.size() < tBuffer)	{
+			memset((void *)pLine,'\0',tBuffer);
+			m_ifIn.getline(pLine,tBuffer-1,'\n');
+			m_strTest += pLine;
+		}
+		delete pLine;
+		m_ifIn.close();
+		cout.flush();
+		return 1;
+	}
+
 protected:
 	char m_cEol; // the character chosen to mark the end-of-line, 0X0A or 0X0D
 	ifstream m_ifIn; // the input file stream
@@ -330,6 +363,7 @@ class loadcmn : public loadmspectrum
 	virtual bool get(mspectrum &_m);
 	virtual bool open(string &_s);
 	virtual bool open_force(string &_s);
+	int m_iVersion;
 
  private:
 

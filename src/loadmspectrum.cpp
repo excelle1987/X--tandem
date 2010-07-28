@@ -141,6 +141,7 @@ The End
 #include "msequence.h"
 #include "mspectrum.h"
 #include "loadmspectrum.h"
+#include <cstring>
 #include "base64.h"
 
 loadgaml::loadgaml( vector<mspectrum>& _vS, mspectrumcondition& _sC, mscore& _m)
@@ -167,44 +168,28 @@ bool loadgaml::open(string &_s)
 	/*
 	* try to open the file and bail out if it isn't available
 	*/
-	m_ifIn.open(m_strPath.c_str());
-	if(m_ifIn.fail())	{
-		return false;
-	}
-
   /*
   * test for the file extension .bioml
   */
-  string strTest = m_strPath;
-  int (*pf)(int) = tolower; 
-  transform(strTest.begin(), strTest.end(), strTest.begin(), pf); 
-  if(strTest.find(".bioml") != strTest.npos)	{
-	  m_ifIn.close();
-	  handler.setFileName( m_strPath.c_str() );
-	  return true;
-  }
   /*
    * check the open file to see if it is a BIOML file
    * Verification tres tres sommaire
-   * scoop up the first 32 lines and then test for
+   * scoop up the first 100000 characters and then test for
    * <?xml followed by <bioml
    */
-  long a = 0;
-  strTest =	" ";
-  string strLine;
-  getline(m_ifIn,strLine);
-  strTest += strLine;
-  while(m_ifIn.good() && !m_ifIn.eof() && a	< 32)	{
-	  getline(m_ifIn,strLine);
-	  strTest += strLine;
-	  a++;
+  int iReturn = load_test(".bioml");
+  if(iReturn == 0)	{
+	return false;
   }
-  m_ifIn.close();
-  size_t tXml =	strTest.find("<?xml");
+  else if(iReturn == 2)	{
+	handler.setFileName( m_strPath.c_str() );
+	return true;
+  }
+  size_t tXml =	m_strTest.find("<?xml");
   size_t tMz = 0;
-  if(tXml != strTest.npos)	{
-	  tMz =	strTest.find("xmlns:GAML=",tXml);
-	  if(tMz ==	strTest.npos)	{
+  if(tXml != m_strTest.npos)	{
+	  tMz =	m_strTest.find("xmlns:GAML=",tXml);
+	  if(tMz ==	m_strTest.npos)	{
 			return false;
 	  }
   }
@@ -281,42 +266,25 @@ bool loadmzdata::open(string &_s)
   /*
    * try to open the file and bail out if it isn't available
    */
-  m_ifIn.open(m_strPath.c_str());
-  if(m_ifIn.fail())	{
-    return false;
-  }
-  /*
-  * test for the file extension .mzdata
-  */
-  string strTest = m_strPath;
-  int (*pf)(int) = tolower; 
-  transform(strTest.begin(), strTest.end(), strTest.begin(), pf); 
-  if(strTest.find(".mzdata") != strTest.npos)	{
-	  m_ifIn.close();
-	  handler.setFileName( m_strPath.c_str() );
-	  return true;
-  }
   /*
    * check the open file to see if it is an mzData file
    * Verification tres tres sommaire
-   * scoop up the first 32 lines and then test for
+   * scoop up the first 100000 characters and then test for
    * <?xml followed by <mzData
    */
-  long a = 0;
-  strTest =	" ";
-  getline(m_ifIn,strLine);
-  strTest += strLine;
-  while(m_ifIn.good() && !m_ifIn.eof() && a	< 32)	{
-	  getline(m_ifIn,strLine);
-	  strTest += strLine;
-	  a++;
+  int iReturn = load_test(".mzdata");
+  if(iReturn == 0)	{
+	return false;
   }
-  m_ifIn.close();
-  size_t tXml =	strTest.find("<?xml");
+  else if(iReturn == 2)	{
+	handler.setFileName( m_strPath.c_str() );
+	return true;
+  }
+  size_t tXml =	m_strTest.find("<?xml");
   size_t tMz = 0;
-  if(tXml != strTest.npos)	{
-	  tMz =	strTest.find("<mzData",tXml);
-	  if(tMz ==	strTest.npos)	{
+  if(tXml != m_strTest.npos)	{
+	  tMz =	m_strTest.find("<mzData",tXml);
+	  if(tMz ==	m_strTest.npos)	{
 			return false;
 	  }
   }
@@ -391,46 +359,23 @@ bool loadmzxml::open(string &_s)
   /*
    * try to open the file and bail out if it isn't available
    */
-  m_ifIn.open(m_strPath.c_str());
-  if(m_ifIn.fail())	{
-    return false;
+  int iReturn = load_test(".mzxml");
+  if(iReturn == 0)	{
+	return false;
   }
-  /*
-  * test for the file extension .mzxml
-  */
-  string strTest = m_strPath;
-  int (*pf)(int) = tolower; 
-  transform(strTest.begin(), strTest.end(), strTest.begin(), pf); 
-  if(strTest.find(".mzxml") != strTest.npos)	{
-	  m_ifIn.close();
-	  handler.setFileName( m_strPath.c_str() );
-	  return true;
+  else if(iReturn == 2)	{
+	handler.setFileName( m_strPath.c_str() );
+	return true;
   }
-  /*
-   * check the open file to see if it is an mzXML file
-   * Verification tres tres sommaire
-    * scoop up the first 32 lines and then test for
-   * <?xml followed by <mzXML or <msRun
-   */
-  long a = 0;
-  strTest = " ";
-  getline(m_ifIn,strLine);
-  strTest += strLine;
-  while(m_ifIn.good() && !m_ifIn.eof() && a	< 32)	{
-	  getline(m_ifIn,strLine);
-	  strTest += strLine;
-	  a++;
-  }
-  m_ifIn.close();
-  size_t tXml = strTest.find("<?xml");
+   size_t tXml = m_strTest.find("<?xml");
   size_t tMz = 0;
-  if(tXml != strTest.npos)	{
+  if(tXml != m_strTest.npos)	{
 	  // Some version of ReadW.exe create a	file with msRun	as the primary tag,
 	  // rather	than mzXML,	so each	should be taken	into account. -S.Wiley
-	  tMz = strTest.find("<mzXML",tXml);
-	  if(tMz == strTest.npos)	{
-		  tMz = strTest.find("<msRun",tXml);
-		  if(tMz == strTest.npos)	{
+	  tMz = m_strTest.find("<mzXML",tXml);
+	  if(tMz == m_strTest.npos)	{
+		  tMz = m_strTest.find("<msRun",tXml);
+		  if(tMz == m_strTest.npos)	{
 			  return false;
 		  }
 	  }
@@ -479,6 +424,7 @@ bool loadmatrix::get(mspectrum &_m)
 	char *pValue;
 	bool bFirst = true;
 	long lId = 0;
+	string strTemp;
 	mspectrum specCurrent;
 	specCurrent.m_strDescription.erase(specCurrent.m_strDescription.begin(),specCurrent.m_strDescription.end());
 /*
@@ -486,7 +432,8 @@ bool loadmatrix::get(mspectrum &_m)
  */
 	while(!m_ifIn.eof() && m_ifIn.good())	{
 		m_ifIn.getline(pLine,m_tSize-1,m_cEol);
-		if(strstr(pLine,"BEGIN IONS") != NULL)
+		strTemp = pLine;
+		if(strTemp.find("BEGIN IONS") != strTemp.npos)
 			break;
 	}
 	mi miCurrent;
@@ -499,25 +446,28 @@ bool loadmatrix::get(mspectrum &_m)
 /*
  * read the parent ion mass and charge and find all of the fragment m/z values and intensities
  */
+	size_t tSize;
+	size_t tEquals;
 	while(m_ifIn.good() && !m_ifIn.eof())	{
 		m_ifIn.getline(pLine,m_tSize-1,m_cEol);
-		if(strstr(pLine,"PEPMASS=") != NULL)	{
-			pValue = strchr(pLine,'=');
-			pValue++;
-			specCurrent.m_dMH = atof(pValue);
+		strTemp = pLine;
+		tSize = strTemp.size();
+		tEquals = strTemp.find("=");
+		if(strTemp.find("PEPMASS=") != strTemp.npos)	{
+			strTemp = strTemp.substr(tEquals+1,tSize-tEquals+1);
+			specCurrent.m_dMH = atof(strTemp.c_str());
 		}
-		else if(strstr(pLine,"#") == pLine)	{
+		else if(strTemp.find("#") == 0)	{
 			specCurrent.m_strDescription += pLine+1;
 			specCurrent.m_strDescription += " ";
 		}
-		else if(strstr(pLine,"TITLE=") == pLine)	{
-			specCurrent.m_strDescription += strchr(pLine,'=')+1;
+		else if(strTemp.find("TITLE=") != strTemp.npos)	{
+			specCurrent.m_strDescription += strTemp.substr(tEquals+1,tSize-tEquals+1);
 			specCurrent.m_strDescription += " ";
 		}
-		else if(strstr(pLine,"CHARGE=") != NULL)	{
-			pValue = strchr(pLine,'=');
-			pValue++;
-			specCurrent.m_fZ = (float)atof(pValue);
+		else if(strTemp.find("CHARGE=") != strTemp.npos)	{
+			strTemp = strTemp.substr(tEquals+1,tSize-tEquals+1);
+			specCurrent.m_fZ = (float)atof(strTemp.c_str());
 		}
 		else if(atof(pLine) > 0.0)	{
 			miCurrent.m_fM = (float)atof(pLine);
@@ -531,7 +481,7 @@ bool loadmatrix::get(mspectrum &_m)
 			miCurrent.m_fI = (float)atof(pValue);
 			specCurrent.m_vMI.push_back(miCurrent);
 		}
-		else if(strstr(pLine,"END IONS") != NULL)	{
+		else if(strTemp.find("END IONS") != strTemp.npos)	{
 			break;
 		}
 	}
@@ -572,6 +522,7 @@ bool loadmatrix::open(string &_s)
 	if(m_ifIn.fail())	{
 		return false;
 	}
+
 /*
  * check the open file to see if it is a matrix science file
  */
@@ -588,8 +539,10 @@ bool loadmatrix::open(string &_s)
 	pLine[m_tSize-1] = '\0';
 	bool bOk = false;
 	long lCount = 0;
+	string strTemp;
 	while(!bOk && !m_ifIn.eof() && lCount < 4096)	{
-		if(strstr(pLine,"BEGIN IONS") == pLine)	{
+		strTemp = pLine;
+		if(strTemp.find("BEGIN IONS") != strTemp.npos)	{
 			bOk = true;
 		}
 		lCount++;
@@ -1065,6 +1018,7 @@ bool loadcmn::get(mspectrum &_m)
 		return false;
 	}
 	char *pLine = new char[256];
+	size_t tLength = 255;
 	long lId = 0;
 	mi miCurrent;
 	bool bNext = true;
@@ -1085,9 +1039,22 @@ bool loadcmn::get(mspectrum &_m)
 	specCurrent.m_dMH = dValue;
 	fread((void *)&cValue,1,1,m_pFile);
 	specCurrent.m_fZ = (float)cValue;
-	fread((void *)&cValue,1,1,m_pFile);
-	fread((void *)pLine,1,(int)cValue,m_pFile);
-	pLine[cValue] = '\0';
+	if(m_iVersion == 2)	{
+		unsigned int iValue = 0;
+		fread((void *)&iValue,4,1,m_pFile);
+		if(iValue > tLength)	{
+			tLength = iValue + 255;
+			delete pLine;
+			pLine = new char[tLength];
+		}
+		fread((void *)pLine,1,iValue,m_pFile);
+		pLine[iValue] = '\0';
+	}
+	else	{	
+		fread((void *)&cValue,1,1,m_pFile);
+		fread((void *)pLine,1,(int)cValue,m_pFile);
+		pLine[cValue] = '\0';
+	}
 	specCurrent.m_strDescription = pLine;
 	fValue = 0.0;
 	fread((void *)&fValue,sizeof(float),1,m_pFile);
@@ -1145,6 +1112,7 @@ bool loadcmn::get(mspectrum &_m)
 
 bool loadcmn::open(string &_s)
 {
+	m_iVersion = 1;
 	m_tId = 1;
 /*
  * copy the file pathname into m_strPath
@@ -1163,9 +1131,16 @@ bool loadcmn::open(string &_s)
 	char *pLine = new char[m_tSize];
 	fread((void *)pLine,1,256,m_pFile);
 	pLine[255] = '\0';
-	if(strstr(pLine,"CMN ") != pLine)	{
+	string strTemp = pLine;
+	if(strTemp.find("CMN ") != 0)	{
 		fclose(m_pFile);
 		return false;
+	}
+	if(pLine[64] != 0)	{
+		m_iVersion = 2;
+	}
+	else	{
+		m_iVersion = 1;
 	}
 	delete pLine;
 	return true;
@@ -1207,31 +1182,19 @@ bool loadmzml::open(string &_s)
   /*
    * try to open the file and bail out if it isn't available
    */
-  m_ifIn.open(m_strPath.c_str());
-  if(m_ifIn.fail())	{
-    return false;
+  int iReturn = load_test(".mzml");
+  if(iReturn == 0)	{
+	return false;
   }
-  /*
-   * check the open file to see if it is an mzData file
-   * Verification tres tres sommaire
-   * scoop up the first 32 lines and then test for
-   * <?xml followed by <mzData
-   */
-  long a = 0;
-  string strTest =	" ";
-  getline(m_ifIn,strLine);
-  strTest += strLine;
-  while(m_ifIn.good() && !m_ifIn.eof() && a	< 32)	{
-	  getline(m_ifIn,strLine);
-	  strTest += strLine;
-	  a++;
+  else if(iReturn == 2)	{
+	handler.setFileName( m_strPath.c_str() );
+	return true;
   }
-  m_ifIn.close();
-  size_t tXml =	strTest.find("<?xml");
+  size_t tXml =	m_strTest.find("<?xml");
   size_t tMz = 0;
-  if(tXml != strTest.npos)	{
-	  tMz =	strTest.find("<mzML",tXml);
-	  if(tMz ==	strTest.npos)	{
+  if(tXml != m_strTest.npos)	{
+	  tMz =	m_strTest.find("<mzML",tXml);
+	  if(tMz ==	m_strTest.npos)	{
 			return false;
 	  }
   }

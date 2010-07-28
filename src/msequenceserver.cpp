@@ -322,7 +322,7 @@ unsigned long msequenceServer::next(const bool _f)
 		cValue = *pValue;
 		*pValue = '\0';
 		m_pCol->m_vASequences[iLength].m_strSeq = m_pLine;
-		m_pCol->m_vASequences[iLength].m_strPath = m_strPath;
+		m_pCol->m_vASequences[iLength].m_siPath = (short int)(m_vstrPaths.size() - 1);
 		*pValue = cValue;
 /*
  *	store the next description line
@@ -423,7 +423,7 @@ unsigned long msequenceServer::next_pro(const bool _f)
 		}
 		if(_f)	{
 			m_pCol->m_vASequences[iLength].m_strSeq = m_pLine;
-			m_pCol->m_vASequences[iLength].m_strPath = m_strPath;
+			m_pCol->m_vASequences[iLength].m_siPath = (short int)(m_vstrPaths.size() - 1);
 		}
 		m_pCol->m_vASequences[iLength].m_mapMods.clear();
 		m_pCol->m_tLength++;
@@ -558,6 +558,7 @@ bool msequenceServer::start(void)
 	}
 	m_strPath = m_dstrFasta.front();
 	m_dstrFasta.pop_front();
+	m_vstrPaths.push_back(m_strPath);
 /*
  * open the file	
  */

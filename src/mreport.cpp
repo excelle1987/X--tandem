@@ -721,7 +721,7 @@ bool mreport::spectrum(mspectrum &_s)
  * sequence outputs the information about an identified protein sequence, using
  * bioml notation
  */
-bool mreport::sequence(mspectrum &_s,const bool _b)
+bool mreport::sequence(mspectrum &_s,const bool _b,vector<string> &_p)
 {
 	if(m_ofOut.fail() || !m_ofOut.good())	{
 		return false;
@@ -749,7 +749,7 @@ bool mreport::sequence(mspectrum &_s,const bool _b)
 		m_ofOut << pLine << ">\n";
 		m_ofOut << "<note label=\"description\">";
 		m_ofOut << _s.m_vseqBest[a].m_strDes.c_str() << "</note>\n";
-		m_ofOut << "<file type=\"peptide\" URL=\"" << _s.m_vseqBest[a].m_strPath.c_str() << "\"/>\n";
+		m_ofOut << "<file type=\"peptide\" URL=\"" << _p[_s.m_vseqBest[a].m_siPath] << "\"/>\n";
 		m_ofOut << "<peptide start=\"1\" end=\"" << (unsigned long)_s.m_vseqBest[a].m_strSeq.size() << "\">\n";
 		c = 0;
 		tRow = 0;

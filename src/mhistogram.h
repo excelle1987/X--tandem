@@ -257,14 +257,11 @@ public:
  */
 	virtual long add(const float _f)	{
 		long lValue = (long)(_f + 0.5);
-
 		// If buffer too small, double its size.
 		// Buffer must have empty bucket at end to output
 		// histogram correctly for reports.
-		if(lValue >= m_lLength - 1)	{
-			long lLengthNew = 32;
-			while (lLengthNew - 1 <= lValue)
-				lLengthNew *= 2;
+		if(lValue > m_lLength - 2)	{
+			long lLengthNew = lValue + 32;
 
 			unsigned short* pListNew = new unsigned short[lLengthNew];
 			memset(pListNew, 0, lLengthNew * sizeof(unsigned short));
@@ -542,6 +539,6 @@ public:
 		return m_lLength;
 	}
 private:
-	long m_pList[32]; // the histogram array
+	unsigned long m_pList[32]; // the histogram array
 };
 #endif //ifdef MHISTOGRAM_H

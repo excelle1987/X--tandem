@@ -387,6 +387,7 @@ bool p3mprocess::load_sequences()
 		m_mapSequences[vSeq[a].m_tUid] = vSeq[a].m_strSeq;
 		a++;
 	}
+	m_vstrPaths = m_svrSequences.m_vstrPaths;
 	a = 0;
 	while(a < m_vseqBest.size())	{
 		m_vseqBest[a] = vSeq[mapDes[m_vseqBest[a].m_strDes]];
@@ -403,6 +404,20 @@ bool p3mprocess::load_sequences()
 		a = 0;
 		while(a < saxFile.m_vseqBest.size())	{
 			if(m_mapSequences.find(saxFile.m_vseqBest[a].m_tUid) == m_mapSequences.end())	{
+				short int iPath = saxFile.m_vseqBest[a].m_siPath;
+				string strPath = saxFile.m_vstrPaths[iPath];
+				size_t b = 0;
+				while(b < m_vstrPaths.size())	{
+					if(strPath == m_vstrPaths[b])	{
+						saxFile.m_vseqBest[a].m_siPath = (short int)b;
+						break;
+					}
+					b++;
+				}
+				if(b == m_vstrPaths.size())	{
+					m_vstrPaths.push_back(strPath);
+					saxFile.m_vseqBest[a].m_siPath = (short int)(m_vstrPaths.size() - 1);
+				}
 				m_vseqBest.push_back(saxFile.m_vseqBest[a]);
 				m_mapSequences.insert(SEQMAP::value_type(saxFile.m_vseqBest[a].m_tUid,saxFile.m_vseqBest[a].m_strSeq));
 			}
@@ -557,7 +572,7 @@ bool p3mprocess::create_score(const msequence &_s,const size_t _v,const size_t _
 				unsigned long sType = 1;
 				while(lType < m_pScore->m_lType+1)	{
 					domValue.m_mapScore[lType] = m_pScore->m_pfScore[sType];
-					domValue.m_mapCount[lType] = m_pScore->m_plCount[sType];
+					domValue.m_mapCount[lType] = (m_pScore->m_plCount[sType]);
 					lType *= 2;
 					sType++;
 				}
@@ -605,7 +620,7 @@ bool p3mprocess::create_score(const msequence &_s,const size_t _v,const size_t _
 				unsigned long sType = 1;
 				while(lType < m_pScore->m_lType+1)	{
 					domValue.m_mapScore[lType] = m_pScore->m_pfScore[sType];
-					domValue.m_mapCount[lType] = m_pScore->m_plCount[sType];
+					domValue.m_mapCount[lType] = (m_pScore->m_plCount[sType]);
 					lType *= 2;
 					sType++;
 				}

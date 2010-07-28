@@ -158,6 +158,7 @@ public:
 
 protected:
 	double dot(unsigned long *_v); // this is where the real scoring happens
+	float ion_check(const unsigned long _v,const size_t _d);
 	bool blur(vector<mi> &_s);
 
 protected:

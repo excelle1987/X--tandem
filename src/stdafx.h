@@ -200,6 +200,7 @@ The End
 // this define should work for most LINUX and UNIX platforms
 #ifdef GCC
 	#include <stdio.h>
+	#include <stdlib.h>
 	// this test was suggested by Steve Wiley to correct a problem
 	// associated with compiling using the 64-bit version of Redhat Linux
 	#ifndef uint32_t
@@ -212,6 +213,7 @@ The End
 
 #ifdef GCC4
 	#include <stdio.h>
+	#include <stdlib.h>
 	// this switch was added for compatibility with GCC v. 4
 #endif
 #ifdef GCC4_3
@@ -236,9 +238,11 @@ using namespace std;
 // These typedefs are used in several places in the code and are included here
 // for simplicity.
 
-typedef map<unsigned long,double> SMap;
+typedef map<size_t,double> SMap;
+
 typedef map<string,string,less<string> > xMap;
 typedef map<string,bool> bMap;
 typedef pair<char,string> prSap;
 
-#define VERSION "TORNADO (2008.12.01.1)"
+#define VERSION "TORNADO (2010.01.01.4)"
+

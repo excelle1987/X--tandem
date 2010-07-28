@@ -365,6 +365,7 @@ public:
       virtual unsigned long mconvert(double _m, const long _c); // convert mass to integer ion m/z for mi vector
 #else
       unsigned long mconvert(double _m, const long _c); // convert mass to integer ion m/z for mi vector
+      unsigned long mconvert(double _m, const double _z); // convert mass to integer ion m/z for mi vector
 #endif
       virtual double hfactor(long _l); // hyper scoring factor from number of ions matched
       virtual double sfactor(); // factor applied to final convolution score
@@ -374,6 +375,7 @@ public:
 protected:
       virtual double dot(unsigned long *_v) = 0; // this is where the real scoring happens
 /*    End puggable scoring API. */
+      virtual float ion_check(const unsigned long _v,const size_t _d) = 0; // finds a specific ion
 
 public:
 	unsigned long add_seq(const char *_s,const bool _n,const bool _c,const unsigned long _l,const int _f);
@@ -398,6 +400,7 @@ public:
 	bool set_mini(const bool _b);
 	bool reset_permute();
 	bool permute();
+	bool set_phospho_bias(const bool _b);
 public:
 	enum	{
 		T_Y =	0x01,
@@ -442,6 +445,8 @@ public:
 	} mscore_error; // enum for referencing information about ion mass measurement accuracy.
 
 protected:
+	double m_dWE;
+	bool m_bPhosphoBias;
 	bool m_bUsePam; // true if the peptide will be checked for all possible point mutations
 	bool m_bUseSaps; // true if the peptide will be checked for all known single amino acid polymorphisms
 	bool m_bIsC; // true if the current peptide contains the C-terminus of the protein
@@ -457,6 +462,7 @@ protected:
 	float m_fWidth; // current half-width of the entry for a single fragment ion in the m_vsmapMI map
 	                // this value is used by blur
 	float *m_pfSeq; // residue masses corresponding to the current sequence in daltons
+	unsigned long *m_plAA;
 	unsigned long *m_plSeq; // residue masses corresponding to the current sequence, converted into integers
 	char *m_pSeq; // the current sequence
 	size_t m_lId; // id of the current spectrum

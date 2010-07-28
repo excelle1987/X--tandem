@@ -207,6 +207,9 @@ mscore::mscore(void) :
 	m_dScale = 1.0;
 	m_bMini = false;
 	m_iCharge = 1;
+	m_bPhosphoBias = true;
+	m_plAA = new unsigned long[256];
+	memset((void *)m_plAA,0,256*sizeof(unsigned long));
 }
 
 mscore::~mscore(void)
@@ -217,6 +220,8 @@ mscore::~mscore(void)
 		delete m_plSeq;
 	if(m_pSeq != NULL)
 		delete m_pSeq;
+	if(m_plAA != NULL)
+		delete m_plAA;
 }
 
 bool mscore::set_mini(const bool _b)
@@ -299,7 +304,7 @@ bool mscore::add_A(const unsigned long _t,const long _c)
  * calculate the conversion factor between an m/z value and its integer value
  * as referenced in m_vsmapMI
  */
-	char cValue = '\0';
+	size_t tC = 0;
 	float *pfScore = m_pSeqUtilFrag->m_pfAScore;
 	unsigned long lCount = 0;
 /*
@@ -307,12 +312,29 @@ bool mscore::add_A(const unsigned long _t,const long _c)
  * look up appropriate scores from m_pSeqUtilFrag->m_pfAScore
  */
 	const unsigned long tPos = (unsigned long) m_tSeqPos;
+	m_dWE = m_fWidth/m_fErr;
+	const double dZ = (double)_c;
 	while(a < m_lSeqLength)	{
-		cValue = m_pSeq[a];
-		dValue += m_pSeqUtilFrag->getAaMass(cValue, tPos+a);
+		tC = m_pSeq[a];
+#ifdef PLUGGABLE_SCORING
+		dValue += m_pSeqUtilFrag->getAaMass((char)tC, tPos+a);
 		lValue = mconvert(dValue, _c);
+#else
+		dValue +=m_pSeqUtilFrag-> m_pdAaMass[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaMod[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaFullMod[tC];
+		if(m_pSeqUtilFrag->m_bPrompt)	{
+			dValue += m_pSeqUtilFrag->m_pdAaPrompt[tC];
+		}
+		if (m_pSeqUtilFrag->m_bSequenceMods)	{
+			SMap::iterator itSeq = m_pSeqUtilFrag->m_mapMods.find(tPos+a);
+			if(itSeq != m_pSeqUtilFrag->m_mapMods.end())
+				dValue += itSeq->second;
+		}
+		lValue = mconvert(dValue, dZ);
+#endif
 		m_plSeq[lCount] = lValue;
-		m_pfSeq[lCount] = pfScore[cValue];
+		m_pfSeq[lCount] = pfScore[tC];
 		lCount++;
 		a++;
 	}
@@ -352,7 +374,6 @@ bool mscore::add_B(const unsigned long _t,const long _c)
  * calculate the conversion factor between an m/z value and its integer value
  * as referenced in m_vsmapMI
  */
-	char cValue = '\0';
 	long lCount = 0;
 	float *pfScore = m_pSeqUtilFrag->m_pfBScore;
 	float *pfScorePlus = m_pSeqUtilFrag->m_pfYScore;
@@ -361,12 +382,30 @@ bool mscore::add_B(const unsigned long _t,const long _c)
  * look up appropriate scores from m_pSeqUtilFrag->m_pfBScore
  */
 	const unsigned long tPos = (unsigned long) m_tSeqPos;
+	size_t tC = 0;
+	m_dWE = m_fWidth/m_fErr;
+	const double dZ = (double)_c;
 	while(a < m_lSeqLength-1)	{
-		cValue = m_pSeq[a];
-		dValue += m_pSeqUtilFrag->getAaMass(cValue, tPos+a);
+		tC = m_pSeq[a];
+#ifdef PLUGGABLE_SCORING
+		dValue += m_pSeqUtilFrag->getAaMass((char)tC, tPos+a);
 		lValue = mconvert(dValue, _c);
+#else
+		dValue +=m_pSeqUtilFrag-> m_pdAaMass[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaMod[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaFullMod[tC];
+		if(m_pSeqUtilFrag->m_bPrompt)	{
+			dValue += m_pSeqUtilFrag->m_pdAaPrompt[tC];
+		}
+		if (m_pSeqUtilFrag->m_bSequenceMods)	{
+			SMap::iterator itSeq = m_pSeqUtilFrag->m_mapMods.find(tPos+a);
+			if(itSeq != m_pSeqUtilFrag->m_mapMods.end())
+				dValue += itSeq->second;
+		}
+		lValue = mconvert(dValue, dZ);
+#endif
 		m_plSeq[lCount] = lValue;
-		m_pfSeq[lCount] = pfScore[cValue]*pfScorePlus[m_pSeq[a+1]];
+		m_pfSeq[lCount] = pfScore[tC]*pfScorePlus[m_pSeq[a+1]];
 		if(a == 1)	{
 			if(m_pSeq[1] == 'P')	{
 				m_pfSeq[lCount] *= 10;
@@ -411,7 +450,7 @@ bool mscore::add_C(const unsigned long _t,const long _c)
  * calculate the conversion factor between an m/z value and its integer value
  * as referenced in m_vsmapMI
  */
-	char cValue = '\0';
+	size_t tC = 0;
 	long lCount = 0;
 	float *pfScore = m_pSeqUtilFrag->m_pfBScore;
 	float *pfScorePlus = m_pSeqUtilFrag->m_pfYScore;
@@ -419,13 +458,30 @@ bool mscore::add_C(const unsigned long _t,const long _c)
  * from N- to C-terminus, calcuate fragment ion m/z values and store the results
  * look up appropriate scores from m_pSeqUtilFrag->m_pfBScore
  */
+	m_dWE = m_fWidth/m_fErr;
+	double dZ = (double)_c;
 	const unsigned long tPos = (unsigned long) m_tSeqPos;
 	while(a < m_lSeqLength-2)	{
-		cValue = m_pSeq[a];
-		dValue += m_pSeqUtilFrag->getAaMass(cValue, tPos+a);
+		tC = m_pSeq[a];
+#ifdef PLUGGABLE_SCORING
+		dValue += m_pSeqUtilFrag->getAaMass((char)tC, tPos+a);
 		lValue = mconvert(dValue, _c);
+#else
+		dValue +=m_pSeqUtilFrag-> m_pdAaMass[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaMod[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaFullMod[tC];
+		if(m_pSeqUtilFrag->m_bPrompt)	{
+			dValue += m_pSeqUtilFrag->m_pdAaPrompt[tC];
+		}
+		if (m_pSeqUtilFrag->m_bSequenceMods)	{
+			SMap::iterator itSeq = m_pSeqUtilFrag->m_mapMods.find(tPos+a);
+			if(itSeq != m_pSeqUtilFrag->m_mapMods.end())
+				dValue += itSeq->second;
+		}
+		lValue = mconvert(dValue, dZ);
+#endif
 		m_plSeq[lCount] = lValue;
-		m_pfSeq[lCount] = pfScore[cValue]*pfScorePlus[m_pSeq[a+1]];
+		m_pfSeq[lCount] = pfScore[tC]*pfScorePlus[m_pSeq[a+1]];
 		lCount++;
 		a++;
 	}
@@ -462,7 +518,7 @@ bool mscore::add_X(const unsigned long _t,const long _c)
  * calculate the conversion factor between an m/z value and its integer value
  * as referenced in m_vsmapMI
  */
-	char cValue = '\0';
+	size_t tC = 0;
 	unsigned long lCount = 0;
 	float fSub = 0.0;
 	float *pfScore = m_pSeqUtilFrag->m_pfXScore;
@@ -470,13 +526,29 @@ bool mscore::add_X(const unsigned long _t,const long _c)
  * from C- to N-terminus, calcuate fragment ion m/z values and store the results
  * look up appropriate scores from m_pSeqUtilFrag->m_pfAScore
  */
+	m_dWE = m_fWidth/m_fErr;
+	double dZ = (double)_c;
 	const unsigned long tPos = (unsigned long) m_tSeqPos;
 	while(a > 0)	{
-		cValue = m_pSeq[a];
-		dValue += m_pSeqUtilFrag->getAaMass(cValue, tPos+a);
+#ifdef PLUGGABLE_SCORING
+		dValue += m_pSeqUtilFrag->getAaMass((char)tC, tPos+a);
 		lValue = mconvert(dValue, _c);
+#else
+		dValue +=m_pSeqUtilFrag-> m_pdAaMass[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaMod[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaFullMod[tC];
+		if(m_pSeqUtilFrag->m_bPrompt)	{
+			dValue += m_pSeqUtilFrag->m_pdAaPrompt[tC];
+		}
+		if (m_pSeqUtilFrag->m_bSequenceMods)	{
+			SMap::iterator itSeq = m_pSeqUtilFrag->m_mapMods.find(tPos+a);
+			if(itSeq != m_pSeqUtilFrag->m_mapMods.end())
+				dValue += itSeq->second;
+		}
+		lValue = mconvert(dValue, dZ);
+#endif
 		m_plSeq[lCount] = lValue;
-		m_pfSeq[lCount] = pfScore[cValue];
+		m_pfSeq[lCount] = pfScore[tC];
 		lCount++;
 		a--;
 	}
@@ -513,7 +585,6 @@ bool mscore::add_Y(const unsigned long _t,const long _c)
 	if(m_bIsC)	{
 		dValue +=  m_pSeqUtilFrag->m_fCT;		
 	}
-	char cValue = '\0';
 	unsigned long lCount = 0;
 	float fSub = 0.0;
 	float *pfScore = m_pSeqUtilFrag->m_pfYScore;
@@ -522,21 +593,39 @@ bool mscore::add_Y(const unsigned long _t,const long _c)
  * from C- to N-terminus, calcuate fragment ion m/z values and store the results
  * look up appropriate scores from m_pSeqUtilFrag->m_pfAScore
  */
-	const unsigned long tPos = (unsigned long) m_tSeqPos;
+	long tPos = (unsigned long) m_tSeqPos;
+	size_t tC = 0;
+	m_dWE = m_fWidth/m_fErr;
+	double dZ = (double)_c;
 	while(a > 0)	{
-		cValue = m_pSeq[a];
-		dValue += m_pSeqUtilFrag->getAaMass(cValue, tPos+a);
+		tC = m_pSeq[a];
+#ifdef PLUGGABLE_SCORING
+		dValue += m_pSeqUtilFrag->getAaMass((char)tC, tPos+a);
 		lValue = mconvert(dValue, _c);
+#else
+		dValue +=m_pSeqUtilFrag-> m_pdAaMass[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaMod[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaFullMod[tC];
+		if(m_pSeqUtilFrag->m_bPrompt)	{
+			dValue += m_pSeqUtilFrag->m_pdAaPrompt[tC];
+		}
+		if (m_pSeqUtilFrag->m_bSequenceMods)	{
+			SMap::iterator itSeq = m_pSeqUtilFrag->m_mapMods.find(tPos+a);
+			if(itSeq != m_pSeqUtilFrag->m_mapMods.end())
+				dValue += itSeq->second;
+		}
+		lValue = mconvert(dValue, dZ);
+#endif
 		if(_t == 0)	{
 			if(a < 5)	{
 				m_plSeq[lCount] = lValue;
-				m_pfSeq[lCount] = pfScore[cValue]*pfScoreMinus[m_pSeq[a-1]];
+				m_pfSeq[lCount] = pfScore[tC]*pfScoreMinus[m_pSeq[a-1]];
 				lCount++;
 			}
 		}
 		else	{
 			m_plSeq[lCount] = lValue;
-			m_pfSeq[lCount] = pfScore[cValue]*pfScoreMinus[m_pSeq[a-1]];
+			m_pfSeq[lCount] = pfScore[tC]*pfScoreMinus[m_pSeq[a-1]];
 			if(a == 2)	{
 				if(m_pSeq[1] == 'P')	{
 					m_pfSeq[lCount] *= 10;
@@ -583,7 +672,7 @@ bool mscore::add_Z(const unsigned long _t,const long _c)
 	if(m_bIsC)	{
 		dValue +=  m_pSeqUtilFrag->m_fCT;		
 	}
-	char cValue = '\0';
+	size_t tC = 0;
 	unsigned long lCount = 0;
 	float fSub = 0.0;
 	float *pfScore = m_pSeqUtilFrag->m_pfYScore;
@@ -592,13 +681,29 @@ bool mscore::add_Z(const unsigned long _t,const long _c)
  * from C- to N-terminus, calcuate fragment ion m/z values and store the results
  * look up appropriate scores from m_pSeqUtilFrag->m_pfAScore
  */
+	m_dWE = m_fWidth/m_fErr;
+	double dZ = (double)_c;
 	const unsigned long tPos = (unsigned long) m_tSeqPos;
 	while(a > 0)	{
-		cValue = m_pSeq[a];
-		dValue += m_pSeqUtilFrag->getAaMass(cValue, tPos+a);
+#ifdef PLUGGABLE_SCORING
+		dValue += m_pSeqUtilFrag->getAaMass((char)tC, tPos+a);
 		lValue = mconvert(dValue, _c);
+#else
+		dValue +=m_pSeqUtilFrag-> m_pdAaMass[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaMod[tC];
+		dValue += m_pSeqUtilFrag->m_pdAaFullMod[tC];
+		if(m_pSeqUtilFrag->m_bPrompt)	{
+			dValue += m_pSeqUtilFrag->m_pdAaPrompt[tC];
+		}
+		if (m_pSeqUtilFrag->m_bSequenceMods)	{
+			SMap::iterator itSeq = m_pSeqUtilFrag->m_mapMods.find(tPos+a);
+			if(itSeq != m_pSeqUtilFrag->m_mapMods.end())
+				dValue += itSeq->second;
+		}
+		lValue = mconvert(dValue, dZ);
+#endif
 		m_plSeq[lCount] = lValue;
-		m_pfSeq[lCount] = pfScore[cValue]*pfScoreMinus[m_pSeq[a-1]];
+		m_pfSeq[lCount] = pfScore[tC]*pfScoreMinus[m_pSeq[a-1]];
 		lCount++;
 		a--;
 	}
@@ -700,6 +805,13 @@ bool mscore::add_details(mspectrum &_s)
 		m_fMaxMass = detTemp.m_fU;
 	}
 	detTemp.m_lA = (unsigned long)m_vSpec.size() - 1;
+//	if(m_bIsotopeError)	{
+//			detTemp.m_fL += (float)(1.00335);
+//			detTemp.m_fU += (float)(1.00335);
+//			m_vDetails.push_back(detTemp);
+//			detTemp.m_fL -= (float)(1.00335);
+//			detTemp.m_fU -= (float)(1.00335);
+//	}
 	m_vDetails.push_back(detTemp);
 	if(m_bIsotopeError)	{
 		if(spCurrent.m_fMH > 1000.0)	{
@@ -722,6 +834,7 @@ bool mscore::add_details(mspectrum &_s)
  */
 unsigned long mscore::add_seq(const char *_s,const bool _n,const bool _c,const unsigned long _l,const int _f)
 {
+	m_tSeqPos = _f;
 	if(_s == NULL)
 		return 0;
 	unsigned long lOldLength = m_lSeqLength;
@@ -877,14 +990,14 @@ bool mscore::get_aa(vector<maa> &_m,const size_t _a,double &_d)
 			cRes = m_pSeq[0];
 			aaValue.m_cRes = cRes;
 			aaValue.m_dMod = m_seqUtil.m_pdAaFullMod['['];
-			aaValue.m_lPos = (long)_a;
+			aaValue.m_lPos = _a;
 			_m.push_back(aaValue);
 		}
 		if(a == ']' && m_seqUtil.m_pdAaFullMod[']'] != 0.0)	{
 			cRes = m_pSeq[strlen(m_pSeq) - 1];
 			aaValue.m_cRes = cRes;
 			aaValue.m_dMod = m_seqUtil.m_pdAaFullMod[']'];
-			aaValue.m_lPos = (long)_a + (long)strlen(m_pSeq) - 1;
+			aaValue.m_lPos = ((long)_a + (long)strlen(m_pSeq) - 1);
 			_m.push_back(aaValue);
 		}
 		if(m_seqUtil.m_pdAaMod[a] != 0.0)	{
@@ -897,7 +1010,7 @@ bool mscore::get_aa(vector<maa> &_m,const size_t _a,double &_d)
 				}
 				aaValue.m_dMod = m_seqUtil.m_pdAaMod[a];
 				aaValue.m_dPrompt = m_seqUtil.m_pdAaPrompt[a];
-				aaValue.m_lPos = (long)_a + (long)(pValue - m_pSeq);
+				aaValue.m_lPos = ((long)_a + (long)(pValue - m_pSeq));
 				dDelta += aaValue.m_dMod;
 				_m.push_back(aaValue);
 				pValue++;
@@ -913,7 +1026,7 @@ bool mscore::get_aa(vector<maa> &_m,const size_t _a,double &_d)
 					aaValue.m_cRes -= 32;
 				}
 				aaValue.m_dMod = m_seqUtil.m_pdAaFullMod[a];
-				aaValue.m_lPos = (long)_a + (long)(pValue - m_pSeq);
+				aaValue.m_lPos = ((long)_a + (long)(pValue - m_pSeq));
 				aaValue.m_dPrompt = 0.0;
 				_m.push_back(aaValue);
 				pValue++;
@@ -937,7 +1050,7 @@ bool mscore::get_aa(vector<maa> &_m,const size_t _a,double &_d)
 					aaValue.m_cRes -= 32;
 				}
 				aaValue.m_dMod = itValue->second;
-				aaValue.m_lPos = (long)(_a+tValue);
+				aaValue.m_lPos = ((long)(_a+tValue));
 				if(cRes <= 'Z')	{
 					cRes += 32;
 				}
@@ -951,7 +1064,7 @@ bool mscore::get_aa(vector<maa> &_m,const size_t _a,double &_d)
 	if(m_Term.m_lN)	{
 		aaValue.m_dMod = m_seqUtil.m_pdAaMod['['];
 		aaValue.m_dPrompt = 0.0;
-		aaValue.m_lPos = (long)_a;
+		aaValue.m_lPos = _a;
 		aaValue.m_cRes = m_pSeq[0];
 		if(aaValue.m_cRes >= 'a' && aaValue.m_cRes <= 'z')	{
 			aaValue.m_cRes -= 32;
@@ -962,7 +1075,7 @@ bool mscore::get_aa(vector<maa> &_m,const size_t _a,double &_d)
 	if(m_Term.m_lC)	{
 		aaValue.m_dMod = m_seqUtil.m_pdAaMod[']'];
 		aaValue.m_dPrompt = 0.0;
-		aaValue.m_lPos = (long)_a+ m_lSeqLength - 1;
+		aaValue.m_lPos = ((long)_a+ m_lSeqLength - 1);
 		aaValue.m_cRes = m_pSeq[m_lSeqLength - 1];
 		if(aaValue.m_cRes >= 'a' && aaValue.m_cRes <= 'z')	{
 			aaValue.m_cRes -= 32;
@@ -973,7 +1086,7 @@ bool mscore::get_aa(vector<maa> &_m,const size_t _a,double &_d)
 	if(m_Pam.m_tCount > 0)	{
 		aaValue.m_dMod = m_seqUtil.m_pdAaMass[m_pSeq[m_Pam.m_tPos]] - m_seqUtil.m_pdAaMass[m_Pam.m_pSeqTrue[m_Pam.m_tPos]];
 		aaValue.m_dPrompt = m_seqUtil.m_pdAaPrompt[m_pSeq[m_Pam.m_tPos]] - m_seqUtil.m_pdAaPrompt[m_Pam.m_pSeqTrue[m_Pam.m_tPos]];
-		aaValue.m_lPos = (long)(_a+ m_Pam.m_tPos);
+		aaValue.m_lPos = (_a+ m_Pam.m_tPos);
 		aaValue.m_cRes = m_Pam.m_pSeqTrue[m_Pam.m_tPos];
 		if(aaValue.m_cRes >= 'a' && aaValue.m_cRes <= 'z')	{
 			aaValue.m_cRes -= 32;
@@ -987,7 +1100,7 @@ bool mscore::get_aa(vector<maa> &_m,const size_t _a,double &_d)
 	if(m_Sap.m_tCount > 0)	{
 		aaValue.m_dMod = m_seqUtil.m_pdAaMass[m_pSeq[m_Sap.m_tPos]] - m_seqUtil.m_pdAaMass[m_Sap.m_pSeqTrue[m_Sap.m_tPos]];
 		aaValue.m_dPrompt = m_seqUtil.m_pdAaPrompt[m_pSeq[m_Sap.m_tPos]] - m_seqUtil.m_pdAaPrompt[m_Sap.m_pSeqTrue[m_Sap.m_tPos]];
-		aaValue.m_lPos = (long)(_a+ m_Sap.m_tPos);
+		aaValue.m_lPos = (_a+ m_Sap.m_tPos);
 		aaValue.m_cRes = m_Sap.m_pSeqTrue[m_Sap.m_tPos];
 		if(aaValue.m_cRes >= 'a' && aaValue.m_cRes <= 'z')	{
 			aaValue.m_cRes -= 32;
@@ -1016,6 +1129,18 @@ __inline__ unsigned long mscore::mconvert(double _m, const long _c)
 	const double dZ = (double)_c;
 	return (unsigned long)((m_pSeqUtilFrag->m_dProton + _m/dZ)*m_fWidth/m_fErr);
 }
+#ifndef PLUGGABLE_SCORING
+
+__inline__ unsigned long mscore::mconvert(double _m, const double _z)
+{
+/*
+ * calculate the conversion factor between an m/z value and its integer value
+ * as referenced in m_vsmapMI
+ */
+	return (unsigned long)((m_pSeqUtilFrag->m_dProton + _m/_z)*m_dWE);
+}
+#endif
+
 /*
  * hfactor returns a factor applied to the score to produce the
  * hyper score, given a number of ions matched.
@@ -1339,7 +1464,7 @@ bool mscore::load_state(void)
 		m_fMinMass = (float)m_dSeqMH;
 	}
 	while(bReturn)	{
-		if(check_parents())	{
+		if(m_State.m_bIsPossible && check_parents())	{
 			return bReturn;
 		}
 		bReturn = run_state_machine();
@@ -1406,7 +1531,8 @@ bool mscore::run_state_machine(void)
 /*
  * return false if there are no more states
  */
-      if(!m_State.m_bStateS)
+   	 m_State.m_bIsPossible = true;
+    if(!m_State.m_bStateS)
       {
 			strcpy(m_pSeq,m_State.m_pSeqS);
 			m_dSeqMH = m_State.m_dSeqMHS;
@@ -1465,12 +1591,12 @@ bool mscore::run_state_machine(void)
              * introduce more possible modifications, and start over calculating all
              * possible combinations.
              */
-            m_State.m_lFilledS++;
+           m_State.m_lFilledS++;
             if (m_State.m_lFilledS < m_State.m_lLastS)
                   m_State.m_lCursorS = m_State.m_lFilledS - 1;
             for (unsigned long i = 0; i < m_State.m_lFilledS; i++)
                   m_State.m_piMods[i] = i;
-      }
+	  }
       else {
             /*
              * last state is no modifications.
@@ -1493,12 +1619,25 @@ bool mscore::run_state_machine(void)
  */
       else
       {
-            for (unsigned long i = 0; i < m_State.m_lFilledS; i++)
+/*            for (unsigned long i = 0; i < m_State.m_lFilledS; i++)
             {
                   unsigned long pos = m_State.m_piMods[i];
                   *(m_State.m_ppModsS[pos]) += 32;
-                  m_dSeqMH += m_seqUtil.m_pdAaMod[*(m_State.m_ppModsS[pos])];
-            }
+                  m_dSeqMH += m_seqUtil.m_pdAaMod[*(m_State.m_ppModsS[pos])]; 
+            } */
+			m_plAA['s'] = 0;
+			m_plAA['t'] = 0;
+			m_plAA['n'] = 0;
+			m_plAA['q'] = 0;
+			m_plAA['y'] = 0;
+			for (unsigned long i = 0; i < m_State.m_lFilledS; i++)	{
+				unsigned long pos = m_State.m_piMods[i];
+				*(m_State.m_ppModsS[pos]) += 32;
+				m_plAA[*(m_State.m_ppModsS[pos])]++;
+				m_dSeqMH += m_seqUtil.m_pdAaMod[*(m_State.m_ppModsS[pos])];
+			}
+			m_State.m_bIsPossible = !(m_plAA['s'] + m_plAA['t'] + m_plAA['y'] > 2 || m_plAA['n'] + m_plAA['q'] > 3);
+
       }
      return true;
 }
@@ -1610,6 +1749,60 @@ float mscore::score(const size_t _i)
 	if(dScore == 0.0)	{
 		dScore = 1.0;
 	}
+	char *pS = strchr(m_pSeq,'s');
+	char *pT = strchr(m_pSeq,'t');
+
+	if(m_bPhosphoBias && m_fHyper < FLT_MAX && (pS || pT))	{
+		int iST = 0;
+		char *pV = strstr(m_pSeq,"sP");
+		while(pV)	{
+			iST++;
+			pV++;
+			pV = strstr(pV,"sP");
+		}
+		pV = strstr(m_pSeq,"tP");
+		while(pV)	{
+			iST++;
+			pV++;
+			pV = strstr(pV,"tP");
+		}
+		double dV = (double)m_fHyper*(1.0 + 0.001*iST);
+		if(dV < FLT_MAX)	{
+			 m_fHyper = (float)dV;
+		}
+		double dNeutral = 0.0;
+		unsigned long lNeutral = 0;
+		m_dWE = (double)(m_fWidth/m_fErr);
+		if((pS && m_pSeqUtilFrag->m_bPhosphoSerine) || (pT && m_pSeqUtilFrag->m_bPhosphoThreonine))	{
+			nMap::iterator itMap = m_seqUtil.m_mapNeutralLoss.find(m_lId);
+			if(itMap != m_seqUtil.m_mapNeutralLoss.end())	{
+				double dHyper = (double)m_fHyper * (double)itMap->second;
+				if(dHyper < FLT_MAX)	{
+					m_fHyper = (float)dHyper;
+				}
+			}
+			else	{
+				dNeutral = m_dSeqMH - (79.966331 + m_seqUtil.m_dWater) - m_seqUtil.m_dProton;
+#ifdef PLUGGABLE_SCORING
+				lNeutral = mconvert(dNeutral,(long)m_vSpec[m_lId].m_fZ);
+#else
+				lNeutral = mconvert(dNeutral,(double)m_vSpec[m_lId].m_fZ);
+#endif
+				float fV = ion_check(lNeutral,m_lId);
+				if(fV >= 20.0)	{
+					double dHyper = (double)m_fHyper * (double)1.001;
+					if(dHyper < FLT_MAX)	{
+						m_fHyper = (float)dHyper;
+					}
+					m_seqUtil.m_mapNeutralLoss.insert(nMap::value_type(m_lId,(float)1.001));
+				}
+				else	{
+					m_seqUtil.m_mapNeutralLoss.insert(nMap::value_type(m_lId,(float)1.0));
+				}
+			}
+		}
+
+	}
 	return (float) dScore;
 }
 /*
@@ -1628,6 +1821,15 @@ bool mscore::set_pam(const bool _b)
 	m_Pam.m_tCount = 0;
 	return m_bUsePam;
 }
+/*
+ * set true if corrections to phosphorylation assignments are to be made
+ */
+bool mscore::set_phospho_bias(const bool _b)
+{
+	m_bPhosphoBias = _b;
+	return m_bPhosphoBias;
+}
+
 /*
  * set true if sequence is to be checked for known single amino acid polymorphisms
  */
@@ -1651,6 +1853,7 @@ bool mscore::set_pos(const size_t _t)
  */
 unsigned long mscore::set_seq(const char *_s,const bool _n,const bool _c,const unsigned long _l,const int _f)
 {
+	m_tSeqPos = _f;
 	if(_s == NULL)
 		return 0;
 /*

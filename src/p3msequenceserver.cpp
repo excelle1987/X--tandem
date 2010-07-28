@@ -196,10 +196,11 @@ unsigned long p3msequenceServer::u_maps(DESMAP &_desc,vector<msequence> &_v)
 	unsigned long lLength = 0;
 	seqTemp.m_strDes = " ";
 	seqTemp.m_strSeq = " ";
-
+	m_vstrPaths.clear();
 	while(!m_dstrFasta.empty())	{
 		m_strPath = m_dstrFasta.front();
 		m_dstrFasta.pop_front();
+		m_vstrPaths.push_back(m_strPath);
 	/*
 	* open the file	
 	*/
@@ -222,7 +223,7 @@ unsigned long p3msequenceServer::u_maps(DESMAP &_desc,vector<msequence> &_v)
 #endif
 				fread(m_pLine,lLength,1,m_pInput);
 				seqTemp.m_strSeq = m_pLine;
-				seqTemp.m_strPath = m_strPath;
+				seqTemp.m_siPath = (short int)(m_vstrPaths.size()-1);
 				seqTemp.m_mapMods.clear();
 				seqTemp.m_tUid = lCount;
 				_v.push_back(seqTemp);

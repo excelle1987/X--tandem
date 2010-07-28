@@ -152,18 +152,13 @@ public:
 		m_dExpect = 1000.0;
 		m_vDomains.clear();
 		m_mapMods.clear();
-		m_strPath = " ";
+		m_siPath = -1;
 		m_strDes = " ";
 		m_bForward = true;
 		m_fIntensity = 1.0;
 		m_iRound = 1000;
 	}
 	virtual ~msequence(void) { 
-		m_strDes.erase(m_strDes.begin(),m_strDes.end());
-		m_strPath.erase(m_strPath.begin(),m_strPath.end());
-		m_strSeq.erase(m_strSeq.begin(),m_strSeq.end());
-		m_mapMods.clear();
-		m_vDomains.clear();
 	}
 
 	int m_iRound; // the identification round that generated this sequence
@@ -175,7 +170,7 @@ public:
 	float m_fIntensity;
 	string m_strSeq; // the sequence of the protein in single-letter code
 	string m_strDes; // a description of the protein
-	string m_strPath; // the path name for the file that contained this sequence
+	short int m_siPath; // the path name for the file that contained this sequence
 
 	vector<mdomain>	m_vDomains; // a vector of identified domains
 	SMap m_mapMods;  // a hash map containing fixed modification information
@@ -187,7 +182,7 @@ public:
 		m_bForward = rhs.m_bForward;
 		m_strSeq = rhs.m_strSeq;
 		m_strDes = rhs.m_strDes;
-		m_strPath = rhs.m_strPath;
+		m_siPath = rhs.m_siPath;
 		m_tUid = rhs.m_tUid;
 		m_fScore = rhs.m_fScore;
 		m_fHyper = rhs.m_fHyper;

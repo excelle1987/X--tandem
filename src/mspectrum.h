@@ -169,6 +169,7 @@ public:
 class mspectrum	{
 public:
 	mspectrum(void) {
+		m_dRatio = 0.0;
 		m_dMH = 0.0; 
 		m_fI = 1.0; 
 		m_fZ = 1.0; 
@@ -201,6 +202,7 @@ public:
 	float m_fHyper; // the hyper score
 	float m_fScoreNext; // next best convolution score
 	float m_fHyperNext; // next best hyper score
+	double m_dRatio;
 	double m_dExpect; // the expectation value
 	double m_dProteinExpect; // the expectation value for the associated protein
 	double m_dMH; // the parent ion mass + a proton
@@ -223,6 +225,7 @@ public:
  */
 	mspectrum& operator=(const mspectrum &rhs)	{
 		m_vdStats = rhs.m_vdStats;
+		m_dRatio = rhs.m_dRatio;
 		m_hHyper = rhs.m_hHyper;
 		m_hConvolute = rhs.m_hConvolute;
 		m_chBCount = rhs.m_chBCount;
@@ -271,6 +274,7 @@ public:
 		m_fZ = rhs.m_fZ;
 		m_tId = rhs.m_tId;
 		m_fScore = rhs.m_fScore;
+		m_dRatio = rhs.m_dRatio;
 		m_fHyper = rhs.m_fHyper;
 		m_fScoreNext = rhs.m_fScoreNext;
 		m_fHyperNext = rhs.m_fHyperNext;
@@ -298,6 +302,7 @@ public:
 			m_tId = rhs.m_tId;
 			m_fScore = rhs.m_fScore;
 			m_fHyper = rhs.m_fHyper;
+			m_dRatio = rhs.m_dRatio;
 			m_fScoreNext = rhs.m_fScoreNext;
 			m_fHyperNext = rhs.m_fHyperNext;
 			a = 0;
@@ -315,6 +320,7 @@ public:
 			m_tId = rhs.m_tId;
 			m_fScore = rhs.m_fScore;
 			m_fHyper = rhs.m_fHyper;
+			m_dRatio = rhs.m_dRatio;
 			m_fScoreNext = rhs.m_fScoreNext;
 			m_fHyperNext = rhs.m_fHyperNext;
 			m_vseqBest.clear();

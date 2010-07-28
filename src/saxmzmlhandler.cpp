@@ -105,6 +105,10 @@ void SAXMzmlHandler::startElement(const XML_Char *el, const XML_Char **attr)
 			m_bInintenArrayBinary = true;
 			m_bInmzArrayBinary = false;
 		}
+		else if(!strcmp(name, "zlib compression") || !strcmp(accession,"MS:1000574"))	{
+			cout << "<br>Fatal error: non-standard CODEC used for mzML peak data (CODEC type=" << name << ").<br>File cannot be interpreted.<br>\n";
+			exit(-10);
+		}
 	}
 	if(isElement("binary", el))	{
 		m_strData.clear();

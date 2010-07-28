@@ -175,10 +175,6 @@ public:
 		  return m_bActive;
 	  }
 
-	  bool is_active()	{
-		  return m_bActive;
-	  }
-
 	  long limit(const long _l)	{
 		  if(_l >= 0)	{
 			  m_lLimit = _l;
@@ -229,8 +225,9 @@ public:
 		  return false;
 	  }
 
-private:
+public:
 	  bool m_bActive;
+private:
 	  long m_lStart;
 	  long m_lEnd;
 	  long m_lStartI;
