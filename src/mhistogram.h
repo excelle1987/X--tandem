@@ -146,7 +146,47 @@ The End
  * mhistogram is included in the mspectrum.h file only
  */
 
+/* 
+   Modified 2007 Robert D Bjornson for X!!Tandem, Parallel MPI version.
+*/
+
+/* RDB */
+
+#include "boost.h"
+
 class mhistogram	{
+  /* RDB */
+  friend class boost::serialization::access;
+
+  template<class Archive>
+  void save(Archive &ar, const unsigned int version) const
+    {
+	ar << m_ulCount;
+	ar << m_dProteinFactor; // a weighting factor
+	ar << m_fA0; // the intercept of the least-squares fit performed in model
+	ar << m_fA1; // the slope of the least-squares fit performed in model
+	ar << m_lLength; // the length of the histogram
+	ar << m_vlSurvive; // the survival function array, reduced to [96] from [256]
+        for (int i=0; i<m_lLength; ++i) // doubling buffer */
+          ar << m_pList[i];
+	ar << m_lSum;
+    }
+  template<class Archive>
+  void load(Archive &ar, const unsigned int version)
+    {
+	ar >> m_ulCount;
+	ar >> m_dProteinFactor; // a weighting factor
+	ar >> m_fA0; // the intercept of the least-squares fit performed in model
+	ar >> m_fA1; // the slope of the least-squares fit performed in model
+	ar >> m_lLength; // the length of the histogram
+	ar >> m_vlSurvive; // the survival function array, reduced to [96] from [256]
+        m_pList = new unsigned short[m_lLength];
+        for (int i=0; i<m_lLength; ++i) // doubling buffer */
+          ar >> m_pList[i];
+	ar >> m_lSum;
+    }
+  BOOST_SERIALIZATION_SPLIT_MEMBER()
+
 public:
 	mhistogram(void) {
 		init();
@@ -477,6 +517,15 @@ public:
  */
 class count_mhistogram
 {
+  /* RDB */
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive &ar, const unsigned int version)
+    {
+	ar & m_lLength;
+        ar & m_pList; // the histogram array
+    }
+
 public:
 	count_mhistogram(void) {m_lLength = 32;}
 	virtual ~count_mhistogram(void) { }

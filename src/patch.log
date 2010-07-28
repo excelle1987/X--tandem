@@ -1,0 +1,82 @@
+patching file loadmspectrum.cpp
+patching file loadmspectrum.h
+patching file Makefile
+Hunk #1 FAILED at 1.
+1 out of 1 hunk FAILED -- saving rejects to file Makefile.rej
+can't find file to patch at input line 286
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|diff -r -c tandem-linux-08-02-01-3/src/Makefile_GCCv3 tandem-linux-08-12-01-1/src/Makefile_GCCv3
+|*** tandem-linux-08-02-01-3/src/Makefile_GCCv3	2008-05-22 11:39:12.000000000 -0400
+|--- tandem-linux-08-12-01-1/src/Makefile_GCCv3	2008-12-15 18:11:01.000000000 -0500
+--------------------------
+File to patch: 
+Skip this patch? [y] 
+Skipping patch.
+4 out of 4 hunks ignored
+can't find file to patch at input line 370
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|diff -r -c tandem-linux-08-02-01-3/src/Makefile_GCCv3_P3 tandem-linux-08-12-01-1/src/Makefile_GCCv3_P3
+|*** tandem-linux-08-02-01-3/src/Makefile_GCCv3_P3	2008-05-22 11:39:12.000000000 -0400
+|--- tandem-linux-08-12-01-1/src/Makefile_GCCv3_P3	2008-12-15 18:12:33.000000000 -0500
+--------------------------
+File to patch: 
+Skip this patch? [y] 
+Skipping patch.
+2 out of 2 hunks ignored
+can't find file to patch at input line 455
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|diff -r -c tandem-linux-08-02-01-3/src/Makefile_GCCv4_P3 tandem-linux-08-12-01-1/src/Makefile_GCCv4_P3
+|*** tandem-linux-08-02-01-3/src/Makefile_GCCv4_P3	2008-05-22 11:39:12.000000000 -0400
+|--- tandem-linux-08-12-01-1/src/Makefile_GCCv4_P3	2008-12-15 18:13:07.000000000 -0500
+--------------------------
+File to patch: 
+Skip this patch? [y] 
+Skipping patch.
+1 out of 1 hunk ignored
+can't find file to patch at input line 528
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|diff -r -c tandem-linux-08-02-01-3/src/Makefile_ubuntu tandem-linux-08-12-01-1/src/Makefile_ubuntu
+|*** tandem-linux-08-02-01-3/src/Makefile_ubuntu	2008-05-22 11:39:12.000000000 -0400
+|--- tandem-linux-08-12-01-1/src/Makefile_ubuntu	2008-11-28 13:14:59.000000000 -0500
+--------------------------
+File to patch: 
+Skip this patch? [y] 
+Skipping patch.
+1 out of 1 hunk ignored
+can't find file to patch at input line 549
+Perhaps you should have used the -p or --strip option?
+The text leading up to this was:
+--------------------------
+|Only in tandem-linux-08-12-01-1/src/: Makefile_ubuntu_32
+|diff -r -c tandem-linux-08-02-01-3/src/Makefile_ubuntu_P3 tandem-linux-08-12-01-1/src/Makefile_ubuntu_P3
+|*** tandem-linux-08-02-01-3/src/Makefile_ubuntu_P3	2008-05-22 11:39:12.000000000 -0400
+|--- tandem-linux-08-12-01-1/src/Makefile_ubuntu_P3	2008-11-28 13:16:27.000000000 -0500
+--------------------------
+File to patch: 
+Skip this patch? [y] 
+Skipping patch.
+1 out of 1 hunk ignored
+patching file mprocess.cpp
+Hunk #1 succeeded at 2117 (offset 14 lines).
+Hunk #2 succeeded at 3279 (offset 15 lines).
+Hunk #3 succeeded at 3478 (offset 14 lines).
+patching file mscore.cpp
+patching file mscorepam.h
+patching file p3.cpp
+patching file release_notes.html
+patching file saxmzxmlhandler.cpp
+patching file stdafx.h
+Hunk #2 FAILED at 212.
+Hunk #3 succeeded at 239 (offset -2 lines).
+1 out of 3 hunks FAILED -- saving rejects to file stdafx.h.rej
+patching file tandem.cpp
+Hunk #1 succeeded at 300 with fuzz 2 (offset 42 lines).
+Hunk #2 succeeded at 273 (offset 2 lines).

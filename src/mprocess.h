@@ -135,6 +135,10 @@ The End
 // File version: 2004-03-01
 // File version: 2004-11-01
 
+/* 
+   Modified 2007 Robert D Bjornson for X!!Tandem, Parallel MPI version.
+*/
+
 typedef map<size_t,string> SEQMAP;
 
 #include <sys/timeb.h>
@@ -145,7 +149,9 @@ typedef map<size_t,string> SEQMAP;
 #include "msequenceserver.h"
 #include "mplugin.h"
 #include "msemistate.h"
-#include "mrefine.h" 
+#include "mrefine.h"
+/* RDB */
+#include "boost.h" 
 #include <set>
 
 /*
@@ -266,6 +272,8 @@ private:
 class mprocess
 {
 public:
+  /* RDB */
+  friend class boost::serialization::access;
 	mprocess(void);
 	virtual ~mprocess(void);
 	mprocesslog m_prcLog;
@@ -330,7 +338,8 @@ protected:
 	friend class mtermmods;
 	friend class mpam;
 
-protected:
+	//protected: RDB changed for serialization
+public:
 	string m_strLastMods;
 	int m_iCurrentRound;
 	bool m_bPermute;
@@ -408,6 +417,10 @@ protected:
 	virtual bool taxonomy(void); // loads the taxonomy setting into the m_svrSequences object
 };
 
+/* RDB */
+BOOST_CLASS_TRACKING(mprocess, track_never);
+
 #include "p3mprocess.h"
 
 #endif
+

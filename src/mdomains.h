@@ -136,13 +136,22 @@ The End
 // File version: 2004-02-01
 // File version: 2005-01-01
 
+/* 
+   Modified 2007 Robert D Bjornson for X!!Tandem, Parallel MPI version.
+*/
+
 /*
  * maa records information about a modified residue
  * NOTE: mdomains.h has no corresponding .cpp file
  */
 
+/* RDB */
+#include "boost.h"
+
 class maa
 {
+  /* RDB */
+  friend class boost::serialization::access;
 public:
 	maa(void) { m_cRes = '\0'; m_lPos = 0; m_dMod = 0.0; m_cMut = '\0'; m_dPrompt = 0.0; m_strId.clear();}
 	virtual ~maa(void) { }
@@ -172,6 +181,8 @@ public:
  */
 class mdomain
 {
+  /* RDB */
+  friend class boost::serialization::access;
 public:
 	mdomain(void) {
 		m_lS = 0;

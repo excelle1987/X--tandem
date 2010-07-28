@@ -131,6 +131,10 @@ The End
 // File version: 2004-02-01
 // File version: 2004-03-01
 
+/* 
+   Modified 2007 Robert D Bjornson for X!!Tandem, Parallel MPI version.
+*/
+
 /*
 	tandem.cpp provides a command line interface to the main processing class, mprocess.
 	A single command line parameter is accepted, which is the file name for an XML class
@@ -149,6 +153,10 @@ The End
 #include "xmlparameter.h"
 #include "mscore.h"
 #include "mprocess.h"
+#include "timer.h"
+#include "ownercompute.h"
+
+#define MAXTHREADS 512
 
 #ifndef X_P3
 
@@ -167,15 +175,19 @@ The End
 	void* RefineThread(void *pParam);
 #endif
 
-int main(int argc, char* argv[])
+int main(int argc, char** argv)
 {
+#ifdef OC
+    ownercompute oc(argc, argv);
+#endif
 	/*
 	* Check the argv array for at least one parameter.
 	* mprocess checks the validity of the file.
 	*/
+    if (gmyproc() == 0) {
 	if(argc < 2 || argc > 1 && strstr(argv[1],"-L") == argv[1] || argc > 1 && strstr(argv[1],"-h") == argv[1])	{
 		cout << "\n\nUSAGE: tandem filename\n\nwhere filename is any valid path to an XML input file.\n\n+-+-+-+-+-+-+\n";
- 		cout << "\nX! TANDEM " << VERSION << "\n";
+ 		cout << "\nX!!TANDEM " << VERSION << "\n";
 		cout << "\nCopyright (C) 2003-2008 Ronald C Beavis, all rights reserved\n";
  		cout << "This software is a component of the GPM  project.\n";
 		cout << "Use of this software governed by the Artistic license.\n";
@@ -187,11 +199,12 @@ int main(int argc, char* argv[])
 		delete pValue;
 		return -1;
 	}
-	cout << "\nX! TANDEM " << VERSION << "\n\n";
+	cout << "\nX!!TANDEM " << VERSION << "\n\n";
+    }
 	/*
 	* Create an mprocess object array
 	*/
-	unsigned long lMaxThreads = 16;
+	unsigned long lMaxThreads = MAXTHREADS;
 	mprocess **pProcess = new mprocess*[lMaxThreads];
 	if(pProcess == NULL)	{
 		cout << "An error was detected creating the processing objects.\nPlease contact a GPM administrator.\n";
@@ -212,8 +225,10 @@ int main(int argc, char* argv[])
 
 #endif
 	pProcess[0] = new mprocess;
-	cout << "Loading spectra .";
-	cout.flush();
+	if (gmyproc() == 0) {
+	  cout << "Loading spectra .";
+	  cout.flush();
+	}
 	/*
 	* Initialize the first mprocess object with the input file name.
 	*/
@@ -223,18 +238,29 @@ int main(int argc, char* argv[])
 		delete pProcess;
 		return -4;
 	}
-	cout << " loaded.\n";
+#ifdef OC
+        string strKey="spectrum, threads";
+        string strValue=oc.numprocs();
+        pProcess[0]->m_xmlValues.set(strKey, strValue);
+#endif
+	if (gmyproc()==0) {
+	  cout << " loaded.\n";
+	}
 	if(pProcess[0]->m_vSpectra.size() == 0)	{
+	  if (gmyproc() == 0) {
 		cout << "No input spectra met the acceptance criteria.\n";
 		cout.flush();
+	  }
 		delete pProcess[0];
 		delete pProcess;
-		return 1;
+		exit(1);
 	}
+	if (gmyproc()==0) {
 	cout << "Spectra matching criteria = " << (unsigned long)pProcess[0]->m_vSpectra.size() << "\n";
 	cout.flush();
+	}
 #ifdef PLUGGABLE_SCORING
- 	cout << "Pluggable scoring enabled.\n";
+ 	if (gmyproc()==0) cout << "Pluggable scoring enabled.\n";
 #endif
       /*
 
@@ -244,14 +270,30 @@ int main(int argc, char* argv[])
 	unsigned long lThread =	pProcess[0]->get_thread();
 	unsigned long lThreads = pProcess[0]->get_threads();
 	if(lThreads	> lMaxThreads)	{
+#ifdef OC /* Parallel version must have same # threads as processes, so this X!Tandem fix won't work for us. */
+	  if (gmyproc()==1) {
+	    cout << "ERROR: MPI allocation of " << lThreads << " exceeded maximum number of threads (" << lMaxThreads << ").\n";
+		cout << "Change MAXTHREADS in tandem.cpp, and recompile.\n";
+	        gmyabort(1);
+	  }
+#else
 		lThreads = lMaxThreads;
+#endif
 	}
-	if(pProcess[0]->m_vSpectra.size() <	lThreads)	{
+	if(pProcess[0]->m_vSpectra.size() < lThreads)	{
+#ifdef OC /* Parallel version can't handle this case either */
+	  if (gmyproc()==1) {
+	    cout << "ERROR: MPI allocation of " << lThreads << " exceeded number of spectra (" << pProcess[0]->m_vSpectra.size() << ").\n";
+		cout << "Rerun with fewer mpi processes.\n";
+		gmyabort(1);
+	  }
+#else
 		lThreads = (unsigned long)pProcess[0]->m_vSpectra.size();
 		if(lThreads	< 1)		{
 			lThreads = 1;
 		}
 		pProcess[0]->set_threads(lThreads);
+#endif
 	}
 #ifdef MSVC
 	DWORD dCount = lThreads	- 1;
@@ -260,10 +302,12 @@ int main(int argc, char* argv[])
 #endif
 	long lSpectra =	lThreads + (long)pProcess[0]->m_vSpectra.size()/lThreads;
 	bool bSpectra =	true;
-	cout <<	"Starting threads .";
-	cout.flush();
+	if (gmyproc()==0) {
+	  cout << "Starting threads .";
+	  cout.flush();
+	}
 	if(lThread != 0xFFFFFFFF)		{
-		while(dCount > 0)		{
+          while(dCount > 0)		{
 			pProcess[dCount] = new mprocess;
 			pProcess[dCount]->set_thread(dCount);						 
 			/*
@@ -305,22 +349,46 @@ int main(int argc, char* argv[])
 				delete pProcess;
 				return -4;
 			}
+#ifdef OC
+                        string strKey="spectrum, threads";
+                        string strValue=oc.numprocs();
+                        pProcess[dCount]->m_xmlValues.set(strKey, strValue);
+#endif
 			dCount--;
-			cout <<	".";
-			cout.flush();
+			if (gmyproc()==0) {
+			  cout <<	".";
+			  cout.flush();
+			}
 		}
 	}
 	dCount = 0;
+#ifndef OC
 #ifdef MSVC
 	pHandle[dCount] = CreateThread(NULL,0,ProcessThread,(void *)pProcess[dCount],0,&pId[dCount]);
 #else
 	pthread_create(&pThreads[dCount],NULL,ProcessThread,(void*)pProcess[dCount]);
+#endif
 #endif
 	dCount++;
 	/*
 	* Initialize more mprocess objects, if lThread is not 0xFFFFFFFF, which signifies default single
 	* threaded operation.
 	*/
+        /* RDB moved these declarations here so that they are seen whether or OC is set */
+        int x;
+	void *vp;
+#ifdef MSVC
+        DWORD wait;
+#else
+        int wait;
+#endif
+
+#ifdef OC
+        pProcess[oc.me()]->process();
+        oc.gather(pProcess);
+        /* RDB this happens as a side effect in the non-OC code, so I'll do it here */
+        dCount=lThreads;
+#else
 	if(lThread != 0xFFFFFFFF && bSpectra)	{
 		while(dCount < lThreads)	{
 #ifdef MSVC
@@ -331,10 +399,12 @@ int main(int argc, char* argv[])
 			dCount++;
 		}
 	}
-	cout << " started.\n";
-	cout.flush();
-	cout << "Computing models:\n";
-	cout.flush();
+	if (gmyproc()==0) {
+	  cout << " started.\n";
+	  cout.flush();
+	  cout << "Computing models:\n";
+	  cout.flush();
+	}
 	/*
 	* wait until all of the mprocess objects return.
 	*/
@@ -383,12 +453,16 @@ int main(int argc, char* argv[])
 		a++;
 	}
 	if(dCount > 1)	{
+	  if (gmyproc()==0) {
 			cout << " done.\n\n";
 			cout.flush();
+	  }
 	}
 	else	{
+	  if (gmyproc()==0) {
 		cout << "\n";
 		cout.flush();
+	  }
 	}
 #else
 	//2003-03-01:note - the declaration below was changed from void **vp;	
@@ -400,8 +474,11 @@ int main(int argc, char* argv[])
 		wait = pthread_join(pThreads[x],&vp);
 	}
 #endif
-	cout << "\tsequences modelled = "<< (long)(pProcess[0]->get_protein_count()/1000.0 + 0.5) << " ks\n";
-	cout.flush();
+#endif //OC 
+	if (gmyproc()==0) {
+	  cout << "\tsequences modelled = "<< (long)(pProcess[0]->get_protein_count()/1000.0 + 0.5) << " ks\n";
+	  cout.flush();
+	}
 	pProcess[0]->merge_spectra();
 	a = 1;
 	/*
@@ -420,19 +497,32 @@ int main(int argc, char* argv[])
 		a++;
 	}
 
+
 	/*
 	* Report the contents of the mprocess objects into an XML file as described
 	* in the input file.
 	*/
-	cout << "Model refinement:\n";
-	cout.flush();
+	if (gmyproc()==0) {
+	  cout << "Model refinement:\n";
+	  cout.flush();
+	}
 	dCount = 0;
+
+#ifdef OC
+        oc.scatter(pProcess); // push master's data out to workers
+        pProcess[oc.me()]->refine();
+        oc.gather(pProcess); // get workers' refinement data back to master
+        oc.finalize(); // workers exit here
+        /* this happens as a side effect in the non-OC code, so I'll do it here */
+        dCount=lThreads;
+#else
 #ifdef MSVC
 	pHandle[dCount] = CreateThread(NULL,0,RefineThread,(void *)pProcess[dCount],0,&pId[dCount]);
 #else
 	pthread_create(&pThreads[dCount],NULL,RefineThread,(void*)pProcess[dCount]);
 #endif
 	dCount++;
+
 	/*
 	* Initialize more mprocess objects, if lThread is not 0xFFFFFFFF, which signifies default single
 	* threaded operation.
@@ -511,6 +601,7 @@ int main(int argc, char* argv[])
 		wait = pthread_join(pThreads[x],&vp);
 	}
 #endif
+#endif // OC step2 and 3
 	a = 1;
 	/*
 	* merge the results into the first object
@@ -539,7 +630,7 @@ int main(int argc, char* argv[])
 		cout << "\n\n";
 		cout.flush();
 	}
-	cout.flush();
+
 	cout << "Creating report:\n";
 	cout.flush();
 	pProcess[0]->report();
@@ -569,7 +660,7 @@ int main(int argc, char* argv[])
 	* Delete the mprocess objects and exit
 	*/
 	a = 0;
-	while(a < 16)	{
+	while(a < lMaxThreads)	{
 		if(pProcess[a] != NULL)	{
 			delete pProcess[a];
 		}
@@ -578,6 +669,8 @@ int main(int argc, char* argv[])
 	delete pProcess;
 	delete pId;
 	delete pHandle;
+	if (getenv("XTandem_TIMES"))
+	    oc.report();
 	return 0;
 }
 /*

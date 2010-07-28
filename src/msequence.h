@@ -133,6 +133,10 @@ The End
 
 // File version: 2003-07-01
 
+/* 
+   Modified 2007 Robert D Bjornson for X!!Tandem, Parallel MPI version.
+*/
+
 /*
  * msequence objects store information about a protein sequence. the sequence and description
  * are loaded from a list file and information about its scoring against mass spectra is
@@ -142,8 +146,38 @@ The End
 
 #include "mdomains.h"
 
+/* RDB */
+#include "boost.h"
+/*
+#include <boost/archive/text_iarchive.hpp>
+#include <boost/archive/text_oarchive.hpp>
+#include <boost/serialization/base_object.hpp>
+#include <boost/serialization/utility.hpp>
+#include <boost/serialization/list.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/map.hpp>
+*/
 class msequence 
 {
+  /* RDB */
+  friend class boost::serialization::access;
+  template<class Archive>
+    void serialize(Archive &ar, const unsigned int version) {
+        ar & m_iRound; // the identification round that generated this sequence
+	ar &  m_bForward;
+	ar & m_tUid; // an identification number
+        ar & m_fScore; // the convolution score for the protein
+	ar & m_fHyper; // the hyper score for the protein
+	ar & m_dExpect; // the expectation value for the protein
+	ar & m_fIntensity;
+
+	ar & m_strSeq; // the sequence of the protein in single-letter code
+	ar & m_strDes; // a description of the protein
+	ar & m_strPath; // the path name for the file that contained this sequence
+
+       ar & m_vDomains; // a vector of identified domains
+       ar & m_mapMods;  // a hash map containing fixed modification information
+  }
 public:
 	msequence(void)	{
 		m_tUid = 0;

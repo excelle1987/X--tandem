@@ -138,6 +138,11 @@ The End
 //#define PLUGGABLE_SCORING
 // File version: 2004-02-01
 // File version: 2004-03-01
+
+/* 
+   Modified 2007 Robert D Bjornson for X!!Tandem, Parallel MPI version.
+*/
+
 #include <set>
 
 #include "mscorestate.h"
@@ -314,6 +319,66 @@ public:
  */
 class mscore : public mplugin
 {
+  /* RDB */
+  friend class boost::serialization::access;
+  template<class Archive>
+  void serialize(Archive &ar, const unsigned int version)
+    {
+	ar & m_fErr; // error for the fragment ions
+	ar & m_fHomoError;
+	ar & m_fHyper; // current hyper score
+	ar & m_fParentErrMinus; // error for the parent ion M+H (not m/z)
+	ar & m_fParentErrPlus; // error for the parent ion M+H (not m/z)
+	ar & m_fMaxMass;
+	ar & m_fMinMass;
+	ar & m_lMaxCharge; // current parent ion charge
+	ar & m_lMaxPeaks; // if > 0, the m_lMaxPeaks most intense peaks will be used
+	ar & m_dScale; // scale for use in hconvert
+        ar & m_seqUtil; // class contains variables and constants for calculating sequence and
+						     // fragment masses
+	ar & m_seqUtilAvg; // class contains variables and constants for calculating fragment masses
+								// based on average atomic masses
+	ar & m_pSeqUtilFrag; // pointer to the msequtilities object to use for fragment ion masses
+	ar & m_State; // class stores information about the potential modification state machine
+	ar & m_Pam; // class stores information about point mutations state machine
+ 	ar & m_Sap; // class stores information about single amino acid polymorphisms state machine
+
+	ar & m_Term; // class stores information about potential modification of the N- & C-terminii
+	ar & m_plCount;// ion count information, indexed using the mscore_type_a enum
+	ar & m_pfScore;// convolute score information, indexed using the mscore_type_a enum
+
+	ar & m_lType; // current ion type - value from mscore_type
+	ar & m_bUsePam; // true if the peptide will be checked for all possible point mutations
+ 	ar & m_bUseSaps; // true if the peptide will be checked for all known single amino acid polymorphisms
+	ar & m_bIsC; // true if the current peptide contains the C-terminus of the protein
+	ar & m_bIsN; // true if the current peptide contains the N-terminus of the protein
+	ar & m_bIsotopeError; // true if the spectrum mass may be associated with the wrong isotopic peak
+	ar & m_lMILength; // current length of the mi vector
+	ar & m_lSeqLength; // current sequence length
+	ar & m_lSize; // maximum sequence length - this can be adjusted on the fly
+	ar & m_lSpectra; // current length of the m_vSpec vector
+	ar & m_lErrorType; // current ion mass accuracy information - value from mscore_error
+	ar & m_fScore; // current convolution score
+	ar & m_dSeqMH; // current sequence M+H - changed from m_fSeqMH to improve accuracy of parent ion mass calculations
+	ar & m_fWidth; // current half-width of the entry for a single fragment ion in the m_vsmapMI map
+	                // this value is used by blur
+	ar & m_pfSeq; // residue masses corresponding to the current sequence in daltons
+	ar & m_plSeq; // residue masses corresponding to the current sequence, converted into integers
+	ar & m_pSeq; // the current sequence
+	ar & m_lId; // id of the current spectrum
+	ar & m_tSeqPos; // zero-based absolute position of the current peptide in the protein sequence
+	ar & m_lDetails;
+	ar & m_iCharge;
+	ar & m_bMini;
+
+	ar & m_vSpec; // vector of all spectra being considered
+	                        // for all spectra being considered
+	ar & m_vDetails; // vector of mspectrumdetails objects, for looking up parent ion M+H
+	                                     // values of mass spectra
+	ar & m_sIndex;
+	ar & m_psPermute;
+
+    }
 public:
 	mscore(void);
 	virtual ~mscore(void);

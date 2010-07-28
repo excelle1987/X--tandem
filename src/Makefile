@@ -3,21 +3,24 @@
 
 EXECUTABLE = ../bin/tandem.exe
 #EXECUTABLE = ../bin/p3.exe
-LINKCC = $(CXX)
+#LINKCC = $(CXX)
+LINKCC = mpicxx
 
 #CXXFLAGS denotes flags for the C++ compiler
 
 CXX = g++
 
+
 #uncomment this line if you are using gcc 4.x
-CXXFLAGS = -O2 -DGCC4 -DPLUGGABLE_SCORING
+CXXFLAGS = -DOC -O2 -DGCC4 -DPLUGGABLE_SCORING -g -O2 -I/home2/rdb9/Installed/Boost/include/boost-1_33_1 -I/usr/local/cluster/mpi/openmpi-gcc/include -I/usr/local/cluster/mpi/openmpi-gcc/include/openmpi
 #CXXFLAGS = -O2 -DGCC4 -DPLUGGABLE_SCORING -DX_P3
 
-LDFLAGS = -lpthread -L/usr/lib -lm -lexpat
+LDFLAGS = -lpthread -L/usr/lib/64 -lm -lexpat -L/home2/rdb9/Installed/Boost/lib -lboost_serialization-gcc
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
 DEPS := $(patsubst %.o,%.d,$(OBJS))
+
 
 all: $(EXECUTABLE)
 
@@ -25,13 +28,15 @@ all: $(EXECUTABLE)
 #these components are defined as dependencies; that is they must be up-to-date before the code is linked
 
 $(EXECUTABLE): $(DEPS) $(OBJS)
-	$(LINKCC) $(CXXFLAGS) -o $(EXECUTABLE) $(OBJS) $(LDFLAGS)
+	$(LINKCC) $(CXXFLAGS) -o $(EXECUTABLE) $(OBJS) $(LDFLAGS) 
 
 #specify the dep files depend on the cpp files
 
 %.d: %.cpp
 	$(CXX) -M $(CXXFLAGS) $< > $@
 	$(CXX) -M $(CXXFLAGS) $< | sed s/\\.o/.d/ > $@
+
+
 
 clean:
 	-rm $(OBJS) $(EXECUTABLE) $(DEPS) *~
@@ -45,5 +50,5 @@ explain:
 
 depend: $(DEPS)
 	@echo "Deps are now up-to-date."
- 	
+
 -include $(DEPS)

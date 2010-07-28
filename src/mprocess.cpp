@@ -136,6 +136,10 @@ The End
 // File version: 2004-11-01
 // File version: 2005-01-01
 
+/* 
+   Modified 2007 Robert D Bjornson for X!!Tandem, Parallel MPI version.
+*/
+
 /*
  * the process object coordinates the function of tandem. it contains the information
  * loaded from the input XML file in the m_xmlValues object and performance
@@ -146,6 +150,12 @@ The End
  * NOTE: mprocess uses cout to report errors. This may not be appropriate for
  *       many applications. Feel free to change this to a more appropriate mechanism
  */
+
+#ifdef OC
+/* This has to be before the include of iostream for MPICH2 */
+#include "mpi.h"
+#include <sstream>
+#endif
 
 #include "stdafx.h"
 #include <algorithm>
@@ -165,6 +175,9 @@ The End
 #include "xmltaxonomy.h"
 #include "mbiomlreport.h"
 #include "mrefine.h"
+
+#include "timer.h"
+#include "ownercompute.h"
 
 // #define TANDEM_EXACT 1
 
@@ -1244,6 +1257,7 @@ bool mprocess::modify()
  */
 bool mprocess::process(void)
 {
+  /* RDB */
 	if(m_vSpectra.size() < 1)
 		return false;
 	string strKey;
@@ -3018,7 +3032,22 @@ bool mprocess::spectra()
 	string strValue;
 	string strKey;
 	strKey = "spectrum, threads";
+#ifdef OC
+        string ostrValue;
+	static bool warning_issued=false;
+
+        strKey="spectrum, threads";
+	// gnumprocs(), gmyproc() defined in ownercompute.cpp
+        strValue=gnumprocs();
+        m_xmlValues.get(strKey, ostrValue);
+        if (!warning_issued && ostrValue != "1" && ostrValue != strValue && gmyproc()==0) {
+	  warning_issued=true;
+          cout << "\nWARNING: " << strKey << " set to " << ostrValue << " in parameter file, overriding with " << strValue << " to match MPI nprocs.\n";
+	}
+        m_xmlValues.set(strKey, strValue);
+#else
 	m_xmlValues.get(strKey,strValue);
+#endif
 	unsigned long lThreads = atoi(strValue.c_str());
 	if(lThreads > 1)	{
 		m_lThreads = lThreads;

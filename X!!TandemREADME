@@ -1,0 +1,81 @@
+
+X!!Tandem is a version of X!Tandem that has been parallelized via MPI to run on clusters or
+other non-shared memory multiprocessors.  It is distributed under the same conditions as X!Tandem.
+It was created by Rob Bjornson at Yale University.  Please send questions to
+robert.bjornson@yale.edu.
+
+For more information about the program, see:
+"X!!Tandem, an improved method for running X!Tandem on Collections of Commodity Computers", 
+Bjornson et. al., Journal of Proteome Research, 2007.
+
+This version of X!!Tandem is based on X!Tandem 08-12-01.  
+
+Changes:
+
+08-12-01:
+
+The 08-12-01 version of X!Tandem includes support for mzML.  This support is
+included in X!!Tandem 08-12-01.  However, it has proven difficult to find good
+test input files in mzML format, so the testing of this has been mininal.  Please
+report any problems you have with mzML files.
+
+X!Tandem 08-12-01 also modified the load balancing algorithm, which should also
+benefit X!!Tandem.
+
+08-02-01-3:
+
+The 08-02-01-3 version of X!Tandem appears to have fixed the problem that the
+output varied depending on the number of threads.  This means that X!!Tandem
+also produces identical output irrespective of the number of processes used.
+
+X!!Tandem 08-02-01-3 changes:
+- Builds correctly out of the box for gcc4.
+- Automatically adjusts the number of threads to match the number of MPI processes.
+- Reports an error if the number of MPI processes exceeds the maximum.
+
+Requirements:
+  To build X!!Tandem, the following additional packages are required:
+  - MPI.  We are currently using OpenMPI 1.1.4, but any mpi version should work.
+  - Boost Serialization library.  We used 1.33.1.  www.boost.org
+
+Note on Serialization:
+  X!!Tandem depends critically on the ability to serialize mprocess
+objects, including all objects directly and indirectly referenced by
+mprocess objects.  In order to accomplish this, the boost
+serialization library is used, and serialization methods have been
+created for all classes that are involved.  These serialization
+methods are found in serialization.cpp, as well as in a few *.h files
+(currently mhistogram.h, mscore.h, msequence.h)
+
+PLEASE NOTE: Any modification to mprocess or subsidiary classes will
+require corresponding changes to the serialization routines in order
+to correctly pass objects between processes.
+
+PLUGIN SCORING: Since plugin scoring involves the creation of a
+subclass of mscore, which is part of an mprocess object, a
+serialization of the plugin subclass must be defined (which will, in
+turn, invoke the serialization of the superclass.)  See mscore_k.h for
+an example of how to do this.
+
+To Build:
+  The Makefile has been modified to build with MPI.  The main
+differences are:
+  - an additional source file: ownercompute.cpp, which contains all
+the MPI code.
+  - A define of OC, which conditionally compiles tandem.cpp and
+mprocess.cpp.
+  - replacement of CXX by MPICXX for compiling ownercompute.cpp and
+for the ld.
+
+Note that you will have to change the paths to the boost library and
+the mpi includes.
+
+To Run:
+  Using openmpi, you run:
+
+  mpiexec -machinefile <nodelist> -n <numprocs> <path to tandem>/tandem.exe <param.xml>
+
+X!!Tandem will determine the number of mpi processes automatically,
+and will override any "spectrum, threads" parameter found in the param
+file by the number of mpi processes.
+

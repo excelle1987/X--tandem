@@ -128,6 +128,13 @@ MERCHANTIBILITY AND FITNESS FOR A PARTICULAR PURPOSE.
 The End 
 */
 
+/* 
+   Modified 2007 Robert D Bjornson for X!!Tandem, Parallel MPI version.
+*/
+
+/* RDB */
+#include "boost.h"
+
 #ifndef MSPECTRUM_H
 #define MSPECTRUM_H
 
@@ -147,6 +154,9 @@ The End
  */
 class mi
 {
+  /* RDB */
+  friend class boost::serialization::access;
+
 public:
 	mi(void) {
 		m_fM = 0.0; 
@@ -168,6 +178,8 @@ public:
 
 class mspectrum	{
 public:
+  /* RDB */
+  friend class boost::serialization::access;
 	mspectrum(void) {
 		m_dMH = 0.0; 
 		m_fI = 1.0; 
