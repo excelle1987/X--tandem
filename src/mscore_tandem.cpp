@@ -265,6 +265,9 @@ inline bool mscore_tandem::blur(vector<mi> &_s)
  * hyper score, given a number of ions matched.
  */
 double mscore_tandem::hfactor(long _l) {
+	if(_l > 63)	{
+		return 	m_pFactorial[63];
+	}
 	return m_pFactorial[_l];
 }
 /*
@@ -359,3 +362,57 @@ double mscore_tandem::dot(unsigned long *_v)
 	*_v = lCount;	
 	return (fScore);
 }
+
+float mscore_tandem::ion_check(const unsigned long _v,const size_t _s)
+{
+	unsigned long a = 0;
+	unsigned long lCount = 0;
+	long lType = 0;
+	size_t b = 0;
+	vector<MIType>::iterator itType = m_vmiType[_s].begin();
+	vector<MIType>::const_iterator itStart = m_vmiType[_s].begin();
+	vector<MIType>::const_iterator itEnd = m_vmiType[_s].end();
+	// tType and tTypeSize were added in 2006.09.01 to correct a problem
+	// created by VC++ 2005. This new version uses a strict bounds checking
+	// style for STL iterators, that cause a run time error if an iterator
+	// longer than .end() is produced by incrementing the iterator.
+	size_t tTypeSize = m_vmiType[_s].size();
+	size_t tType = tTypeSize/2;
+	float fV = (float)1.0;
+	itType += tType;
+
+	if(itType->m_lM == _v)	{
+		fV = itType->m_fI;
+		return fV;
+	}
+	else if(_v > itType->m_lM)	{
+		itType++;
+		while(itType != itEnd)	{
+			if(itType->m_lM == _v)	{
+				fV = itType->m_fI;
+				return fV;
+			}
+			if(_v < itType->m_lM)	{
+				return fV;
+			}
+			itType++;
+		}
+		return fV;
+	}
+	else	{
+		itType--;
+		while(itType != itStart)	{
+			if(itType->m_lM == _v)	{
+				fV = itType->m_fI;
+				return fV;
+			}
+			if(_v > itType->m_lM)	{
+				return fV;
+			}
+			itType--;
+		}
+		return fV;
+	}
+	return fV;
+}
+

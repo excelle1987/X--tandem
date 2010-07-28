@@ -162,6 +162,7 @@ public:
 	deque<string> m_dstrFasta;	// List of FASTA files
 	vector<string> m_vstrFasta;
 	vector<string> m_vstrDesc;
+	vector<string> m_vstrPaths;
 
 	enum {
 		FASTA = 0,

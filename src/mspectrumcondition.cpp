@@ -228,7 +228,7 @@ bool mspectrumcondition::condition(mspectrum &_s, mscore &_score)
 		size_t tSize = m_vdNeutralLosses.size();
 		bool bOK = false;
 		while(m < tSize && !bOK)	{
-			bOK = find_loss(_s,(float)m_vdNeutralLosses[m],0.5,0.05);
+			bOK = find_loss(_s,(float)m_vdNeutralLosses[m],(float)0.5,(float)0.05);
 			m++;
 		}
 		if(!bOK)	{

@@ -297,6 +297,9 @@ mprocess::mprocess(void)
 	m_bReversedOnly = false;
 	m_bSaps = false;
 	m_bAnnotation = false;
+	m_bSerialize = false;
+	m_bQuickAcetyl = true;
+	m_bQuickPyro = true;
 }
 
 mprocess::~mprocess(void)
@@ -483,11 +486,18 @@ bool mprocess::create_score(const msequence &_s,const size_t _v,const size_t _w,
 			}
 		}
 		bIonCheck = false;
+		double dRatio = (double)lIonCount/(double)(_w - _v + 1);
+		if(m_vSpectra[a].m_fZ < 1.1 && dRatio > 0.2 && lIonCount > m_lIonCount)	{
+			bIonCheck = true;
+		}
+		if(m_vSpectra[a].m_fZ > 1.0 && dRatio > 0.5 && lIonCount > m_lIonCount)	{
+			bIonCheck = true;
+		}
 		if(lIonCount > m_lIonCount)	{
-//			if( (m_pScore->m_plCount[mscore::S_A] || m_pScore->m_plCount[mscore::S_B] || m_pScore->m_plCount[mscore::S_C]) && 
-//				(m_pScore->m_plCount[mscore::S_X] || m_pScore->m_plCount[mscore::S_Y] || m_pScore->m_plCount[mscore::S_Z]))	{
-				bIonCheck = true;
-//			}
+			bIonCheck = true;
+		}
+		if(m_vSpectra[a].m_fZ > 1.0 && dRatio > 0.5 && lIonCount > m_lIonCount)	{
+			bIonCheck = true;
 		}
 		bMassCheck = m_errValues.check(m_vSpectra[a].m_dMH,m_pScore->seq_mh());
 		if(!_p)	{
@@ -515,15 +525,15 @@ bool mprocess::create_score(const msequence &_s,const size_t _v,const size_t _w,
 				domValue.m_dMH = m_pScore->seq_mh();
 				// m_fDelta was changed to m_dDelta in 2006.02.01
 				domValue.m_dDelta = m_vSpectra[a].m_dMH - m_pScore->seq_mh();
-				domValue.m_lE = _w;
-				domValue.m_lS = _v;
-				domValue.m_lMissedCleaves = _m;
+				domValue.m_lE = (int)_w;
+				domValue.m_lS = (int)_v;
+				domValue.m_lMissedCleaves = (int)_m;
 				domValue.m_bUn = m_bUn;
 				unsigned long lType = 1;
 				unsigned long sType = 1;
 				while(lType < m_pScore->m_lType+1)	{
 					domValue.m_mapScore[lType] = m_pScore->m_pfScore[sType];
-					domValue.m_mapCount[lType] = m_pScore->m_plCount[sType];
+					domValue.m_mapCount[(int)lType] = (unsigned long)m_pScore->m_plCount[sType];
 					lType *= 2;
 					sType++;
 				}
@@ -602,6 +612,7 @@ bool mprocess::create_score(const msequence &_s,const size_t _v,const size_t _w,
 					b++;
 				}
 				if(bOk)	{
+					m_vSpectra[a].m_dRatio = dRatio;
 					m_vSpectra[a].m_tCurrentSequence = _s.m_tUid;
 					seqValue.m_iRound = m_iCurrentRound;
 					m_vSpectra[a].m_vseqBest.push_back(seqValue);
@@ -656,6 +667,7 @@ bool mprocess::create_score(const msequence &_s,const size_t _v,const size_t _w,
 				m_vSpectra[a].m_tCurrentSequence = _s.m_tUid;
 				m_vSpectra[a].m_vseqBest.clear();
 				seqValue.m_iRound = m_iCurrentRound;
+				m_vSpectra[a].m_dRatio = dRatio;
 				m_vSpectra[a].m_vseqBest.push_back(seqValue);
 			}
 		}
@@ -1216,10 +1228,25 @@ bool mprocess::modify()
 {
 	string strKey = "residue, modification mass";
 	string strValue;
-	if(m_xmlValues.get(strKey,strValue)) {
-		m_pScore->m_seqUtil.modify_all(strValue);
-		m_pScore->m_seqUtilAvg.modify_all(strValue);
+	m_vstrModifications.clear();
+	if(m_xmlValues.get(strKey,strValue) && strValue.size() > 0) {
+		m_vstrModifications.push_back(strValue);
 	}
+	else	{
+		strValue = "";
+		m_vstrModifications.push_back(strValue);
+	};
+	int a = 1;
+	char *pLine = new char[256];
+	sprintf(pLine,"residue, modification mass %i",(int)a);
+	strKey = pLine;
+	while(m_xmlValues.get(strKey,strValue) && strValue.size() > 0) {
+		m_vstrModifications.push_back(strValue);
+		a++;
+		sprintf(pLine,"residue, modification mass %i",(int)a);
+		strKey = pLine;
+	}
+	delete pLine;
 	strKey = "residue, potential modification mass";
 	if(m_xmlValues.get(strKey,strValue)) {
 		m_pScore->m_seqUtil.modify_maybe(strValue);
@@ -1481,6 +1508,28 @@ bool mprocess::process(void)
 			m_lStartMax = atoi(strValue.c_str());
 		}
 	}
+
+	strKey = "protein, quick acetyl";
+	if(m_xmlValues.get(strKey,strValue)) {
+		if(strValue == "no")	{
+			m_bQuickAcetyl = false;
+		}
+	}
+	strKey = "protein, quick pyrolidone";
+	if(m_xmlValues.get(strKey,strValue)) {
+		if(strValue == "no")	{
+			m_bQuickPyro = false;
+		}
+	}
+	strKey = "protein, stP bias";
+	bool bA = true;
+	if(m_xmlValues.get(strKey,strValue)) {
+		if(strValue == "no")	{
+			bA = false;
+		}
+	}
+	m_pScore->set_phospho_bias(bA);
+
 	strKey = "protein, modified residue mass file";
 	if(m_xmlValues.get(strKey,strValue))	{
 		m_pScore->m_seqUtil.set_aa_file(strValue);
@@ -1539,6 +1588,7 @@ bool mprocess::process(void)
 		m_pScore->add_mi(m_vSpectra[a]);
 		a++;
 	}
+	removeMI();
 	a = 0;
 	long b = 0;
 	bool bForward = true;
@@ -1546,7 +1596,7 @@ bool mprocess::process(void)
 	pLine[0] = '\0';
 	char cBs = 0x08;
 /*
- * esitimate the smallest number of residues that could possibily correspond to the
+ * estimate the smallest number of residues that could possibily correspond to the
  * smallest parent ion in the m_vSpectra vector
  */
 	residues();
@@ -1612,6 +1662,7 @@ bool mprocess::process(void)
  * record the total protein modelling session time 
  */
 	m_dSearchTime = (clock() - m_dSearchTime)/(double)CLOCKS_PER_SEC;
+	m_vstrPaths = m_svrSequences.m_vstrPaths;
 	m_svrSequences.clear();
 /*
  * process the scoring histograms in each spectrum, so that expectation values
@@ -1639,7 +1690,7 @@ bool mprocess::refine(void)
 	if(!strValue.empty() && (m_lThread == 0 || m_lThread == 0xFFFFFFFF))	{
 		mbiomlreport rptCurrent;
 		rptCurrent.setpath(strValue);
-		rptCurrent.write(m_vseqBest);
+		rptCurrent.write(m_vseqBest,m_vstrPaths);
 	}
 	strKey = "refine";
 	m_xmlValues.get(strKey,strValue);
@@ -1791,7 +1842,7 @@ bool mprocess::report(void)
 		if(a != 0)	{
 			strValue += " ";
 		}
-		sprintf(pLine,"%i",m_viQuality[a]);
+		sprintf(pLine,"%i",(int)m_viQuality[a]);
 		strValue += pLine;
 		a++;
 	}
@@ -1831,12 +1882,12 @@ bool mprocess::report(void)
 	}
 	size_t tSeq = 0;
 	while(tSeq < m_svrSequences.m_vstrFasta.size())	{
-		sprintf(pLine,"list path, sequence source #%i",(unsigned long)(tSeq+1));
+		sprintf(pLine,"list path, sequence source #%i",(int)(tSeq+1));
 		strKey = pLine;
 		strValue = m_svrSequences.m_vstrFasta[tSeq];
 		m_xmlPerformance.set(strKey,strValue);
 		if(tSeq < m_svrSequences.m_vstrDesc.size())	{
-			sprintf(pLine,"list path, sequence source description #%i",(unsigned long)(tSeq+1));
+			sprintf(pLine,"list path, sequence source description #%i",(int)(tSeq+1));
 			strKey = pLine;
 			strValue = m_svrSequences.m_vstrDesc[tSeq];
 			m_xmlPerformance.set(strKey,strValue);
@@ -1845,7 +1896,7 @@ bool mprocess::report(void)
 	}
 	tSeq = 0;
 	while(tSeq < m_vstrSaps.size())	{
-		sprintf(pLine,"list path, saps source #%i",(unsigned long)(tSeq+1));
+		sprintf(pLine,"list path, saps source #%i",(int)(tSeq+1));
 		strKey = pLine;
 		strValue = m_vstrSaps[tSeq];
 		m_xmlPerformance.set(strKey,strValue);
@@ -1853,7 +1904,7 @@ bool mprocess::report(void)
 	}
 	tSeq = 0;
 	while(tSeq < m_vstrMods.size())	{
-		sprintf(pLine,"list path, mods source #%i",(unsigned long)(tSeq+1));
+		sprintf(pLine,"list path, mods source #%i",(int)(tSeq+1));
 		strKey = pLine;
 		strValue = m_vstrMods[tSeq];
 		m_xmlPerformance.set(strKey,strValue);
@@ -1868,37 +1919,37 @@ bool mprocess::report(void)
 	m_dThreshold = dMaxExpect;
 
 	strKey = "refining, # input models";
-	sprintf(pLine,"%u",(unsigned long)m_tRefineModels);
+	sprintf(pLine,"%u",(unsigned int)m_tRefineModels);
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 	
 	strKey = "refining, # input spectra";
-	sprintf(pLine,"%u",(unsigned long)(m_tRefineInput));
+	sprintf(pLine,"%u",(unsigned int)(m_tRefineInput));
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 
 	strKey = "refining, # partial cleavage";
-	sprintf(pLine,"%u",(unsigned long)(m_tRefinePartial));
+	sprintf(pLine,"%u",(unsigned int)(m_tRefinePartial));
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 
 	strKey = "refining, # unanticipated cleavage";
-	sprintf(pLine,"%u",(unsigned long)(m_tRefineUnanticipated));
+	sprintf(pLine,"%u",(unsigned int)(m_tRefineUnanticipated));
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 
 	strKey = "refining, # potential N-terminii";
-	sprintf(pLine,"%u",(unsigned long)(m_tRefineNterminal));
+	sprintf(pLine,"%u",(unsigned int)(m_tRefineNterminal));
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 
 	strKey = "refining, # potential C-terminii";
-	sprintf(pLine,"%u",(unsigned long)(m_tRefineCterminal));
+	sprintf(pLine,"%u",(unsigned int)(m_tRefineCterminal));
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 
 	strKey = "refining, # point mutations";
-	sprintf(pLine,"%u",(unsigned long)(m_tRefinePam));
+	sprintf(pLine,"%u",(unsigned int)(m_tRefinePam));
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 	
@@ -1937,8 +1988,12 @@ bool mprocess::report(void)
 	cout << "\twriting results ";
 	cout.flush();
 	m_prcLog.log("writing results");
+	restore();
+	
+	m_dEsum = 0.0;
+
 	if(strResults != "all" && strResults != "valid" && strResults != "stochastic")
-		strResults = "all";
+		strResults = "valid";
 
 	if(strResults == "all")	{
 		report_all();
@@ -2021,21 +2076,24 @@ bool mprocess::report_all()
 
 	while(a < tLength)	{
 		b = 0;
-		while(b < m_vSpectra[a].m_vseqBest.size())	{
-			itValue = m_mapSequences.find(m_vSpectra[a].m_vseqBest[b].m_tUid);
-			m_vSpectra[a].m_vseqBest[b].m_strSeq = (*itValue).second;
-			b++;
+		if(!m_vSpectra[a].m_vseqBest.empty() && !m_vSpectra[a].m_vseqBest[0].m_vDomains.empty())	{
+			m_dEsum += m_vSpectra[a].m_hHyper.expect(m_pScore->hconvert(m_vSpectra[a].m_vseqBest[0].m_vDomains[0].m_fHyper));
+			while(b < m_vSpectra[a].m_vseqBest.size())	{
+				itValue = m_mapSequences.find(m_vSpectra[a].m_vseqBest[b].m_tUid);
+				m_vSpectra[a].m_vseqBest[b].m_strSeq = (*itValue).second;
+				b++;
+			}
+			if(bSpectra || bHistograms || bProteins)
+				rptValue.group(m_vSpectra[a]);
+			if(bProteins)
+				rptValue.sequence(m_vSpectra[a],bSequences,m_vstrPaths);
+			if(bHistograms)
+				rptValue.histogram(m_vSpectra[a]);
+			if(bSpectra)
+				rptValue.spectrum(m_vSpectra[a]);
+			if(bSpectra || bHistograms || bProteins)
+				rptValue.endgroup();
 		}
-		if(bSpectra || bHistograms || bProteins)
-			rptValue.group(m_vSpectra[a]);
-		if(bProteins)
-			rptValue.sequence(m_vSpectra[a],bSequences);
-		if(bHistograms)
-			rptValue.histogram(m_vSpectra[a]);
-		if(bSpectra)
-			rptValue.spectrum(m_vSpectra[a]);
-		if(bSpectra || bHistograms || bProteins)
-			rptValue.endgroup();
 		m_vSpectra[a].m_vseqBest.clear();
 		a++;
 	}
@@ -2128,12 +2186,15 @@ bool mprocess::report_valid(const double _d)
 	while(a < tLength)	{
 		dValue = 3.0;
 		long c = 0;
-		if(m_vSpectra[a].m_fScore > 0.0 && m_vSpectra[a].m_vseqBest.size() > 0 && m_vSpectra[a].m_vseqBest[0].m_vDomains.size() > 0)	{
+		if(m_vSpectra[a].m_fScore > 0.0 && !m_vSpectra[a].m_vseqBest.empty() && !m_vSpectra[a].m_vseqBest[0].m_vDomains.empty())	{
 			dValue = m_vSpectra[a].m_hHyper.expect(m_pScore->hconvert(m_vSpectra[a].m_vseqBest[0].m_vDomains[0].m_fHyper));
-			dValue = log10(dValue);
 			dProtein = m_vSpectra[a].m_dProteinExpect;
+			if(log10(dValue) <= _d && dProtein <= dProteinMax)	{
+				m_dEsum += dValue;
+			}
+			dValue = log10(dValue);
 		}
-		if(m_vSpectra[a].m_vseqBest.size() > 0 && dValue <= _d && dProtein <= dProteinMax)	{
+		if(!m_vSpectra[a].m_vseqBest.empty() && !m_vSpectra[a].m_vseqBest[0].m_vDomains.empty() && dValue <= _d && dProtein <= dProteinMax)	{
 			b = 0;
 			while(b < m_vSpectra[a].m_vseqBest.size())	{
 				itValue = m_mapSequences.find(m_vSpectra[a].m_vseqBest[b].m_tUid);
@@ -2156,7 +2217,7 @@ bool mprocess::report_valid(const double _d)
 			if(bSpectra || bHistograms || bProteins)
 				rptValue.group(m_vSpectra[a]);
 			if(bProteins)
-				rptValue.sequence(m_vSpectra[a],bSequences);
+				rptValue.sequence(m_vSpectra[a],bSequences,m_vstrPaths);
 			if(bHistograms)
 				rptValue.histogram(m_vSpectra[a]);
 			if(bSpectra)
@@ -2171,26 +2232,26 @@ bool mprocess::report_valid(const double _d)
 	}
 	strKey = "modelling, total spectra assigned";
 	char *pLine = new char[256];
-	sprintf(pLine,"%u",(unsigned long)m_tValid);
+	sprintf(pLine,"%u",(unsigned int)m_tValid);
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 	strKey = "modelling, total unique assigned";
-	sprintf(pLine,"%u",(unsigned long)m_tUnique);
+	sprintf(pLine,"%u",(unsigned int)m_tUnique);
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 	if(m_lReversed != -1)	{
 		strKey = "modelling, reversed sequence false positives";
-		sprintf(pLine,"%i",m_lReversed);
+		sprintf(pLine,"%i",(int)m_lReversed);
 		strValue = pLine;
 		m_xmlPerformance.set(strKey,strValue);
 	}
-	unsigned long lE = (unsigned long)(0.5+(double)m_tUnique/(1.0+1.0/m_dThreshold));
-	unsigned long lEe = (unsigned long)(0.5 + sqrt((double)lE));
+	unsigned long lE = (unsigned long)(0.5+m_dEsum);
+	unsigned long lEe = (unsigned long)(0.5 + sqrt(m_dEsum));
 	if(lEe == 0)	{
 		lEe = 1;
 	}
 	strKey = "modelling, estimated false positives";
-	sprintf(pLine,"%u",lE);
+	sprintf(pLine,"%u",(unsigned int)lE);
 	strValue = pLine;
 	m_xmlPerformance.set(strKey,strValue);
 
@@ -2269,14 +2330,16 @@ bool mprocess::report_stochastic(const double _d)
 	SEQMAP::iterator itValue;
 	size_t tLength = m_vSpectra.size();
 	double dValue = 0.0;
-
 	while(a < tLength)	{
 		dValue = 3.0;
-		if(m_vSpectra[a].m_vseqBest.size() > 0 && m_vSpectra[a].m_vseqBest[0].m_vDomains.size() > 0)	{
+		if(!m_vSpectra[a].m_vseqBest.empty() && !m_vSpectra[a].m_vseqBest[0].m_vDomains.empty())	{
 			dValue = m_vSpectra[a].m_hHyper.expect(m_pScore->hconvert(m_vSpectra[a].m_vseqBest[0].m_vDomains[0].m_fHyper));
+			if(log10(dValue) > _d)	{
+				m_dEsum += dValue;
+			}
 			dValue = log10(dValue);
 		}
-		if(m_vSpectra[a].m_vseqBest.size() == 0 || dValue > _d)	{
+		if(m_vSpectra[a].m_vseqBest.empty() || dValue > _d)	{
 			b = 0;
 			while(b < m_vSpectra[a].m_vseqBest.size())	{
 				itValue = m_mapSequences.find(m_vSpectra[a].m_vseqBest[b].m_tUid);
@@ -2286,7 +2349,7 @@ bool mprocess::report_stochastic(const double _d)
 			if(bSpectra || bHistograms || bProteins)
 				rptValue.group(m_vSpectra[a]);
 			if(bProteins)
-				rptValue.sequence(m_vSpectra[a],bSequences);
+				rptValue.sequence(m_vSpectra[a],bSequences,m_vstrPaths);
 			if(bHistograms)
 				rptValue.histogram(m_vSpectra[a]);
 			if(bSpectra)
@@ -2394,7 +2457,7 @@ bool mprocess::report_expect(const double _m)
 		while(b < tBest)	{
 			tUid = m_vSpectra[a].m_vseqBest[b].m_tUid;
 			bRound = false;
-			if(m_vSpectra[a].m_vseqBest[b].m_iRound < 3 || m_lReversed != -1)	{
+			if(m_vSpectra[a].m_vseqBest[b].m_iRound < 10 || m_lReversed != -1)	{
 				bRound = true;
 				m_setRound.insert(tUid);
 			}
@@ -2585,7 +2648,7 @@ bool mprocess::residues()
  * large moeities added as modifications to the peptide sequences.
  */
 
-	m_tMinResidues = 4; 
+	m_tMinResidues = 5; 
 	return true;
 }
 
@@ -2636,6 +2699,48 @@ bool mprocess::rollback(vector<mspectrum>& _v,const double _m,const double _f)
  * from that msequence. each peptide is then tested and scored.
  */
 bool mprocess::score(const msequence &_s)
+{
+	size_t m = 0;
+	string strValue;
+	if(!m_vstrModifications.empty())	{
+		strValue = m_vstrModifications[m];
+		m_pScore->m_seqUtil.modify_all(strValue);
+		m_pScore->m_seqUtilAvg.modify_all(strValue);
+	}
+	bool bReturn = score_single(_s);
+	m++;
+	while(m < m_vstrModifications.size())	{
+		strValue = m_vstrModifications[m];
+		m_pScore->m_seqUtil.modify_all(strValue);
+		m_pScore->m_seqUtilAvg.modify_all(strValue);
+		bReturn = score_single(_s);
+		m++;
+	}
+	return bReturn;
+}
+
+bool mprocess::score_terminus(const string &_s)
+{
+	size_t m = 0;
+	string strValue;
+	if(!m_vstrModifications.empty())	{
+		strValue = m_vstrModifications[m];
+		m_pScore->m_seqUtil.modify_all(strValue);
+		m_pScore->m_seqUtilAvg.modify_all(strValue);
+	}
+	bool bReturn = score_terminus_single(_s);
+	m++;
+	while(m < m_vstrModifications.size())	{
+		strValue = m_vstrModifications[m];
+		m_pScore->m_seqUtil.modify_all(strValue);
+		m_pScore->m_seqUtilAvg.modify_all(strValue);
+		bReturn = score_terminus_single(_s);
+		m++;
+	}
+	return bReturn;
+}
+
+bool mprocess::score_single(const msequence &_s)
 {
 	m_pScore->m_seqUtil.motif_set(_s);
 	if(m_bAnnotation && !m_mapAnnotation.empty())	{
@@ -2696,6 +2801,10 @@ bool mprocess::score(const msequence &_s)
 		m_semiState.activate(false);
 	}
 	const char cAster = '*';
+	double dNt = m_pScore->m_seqUtil.m_pdAaMod['['];
+	double dNtAve = m_pScore->m_seqUtilAvg.m_pdAaMod['['];
+	bool bFirstAcetyl = false;
+	unsigned long lRagged = 1;
 /*
  * continue operations until the start cursor (the beginning of the new peptide) reaches
  * the end of the sequence
@@ -2761,12 +2870,16 @@ bool mprocess::score(const msequence &_s)
 			if(lEnd - lStart >= lMinAa && lEnd < lLength)	{
 				m_semiState.reset(lStart,lEnd,lLastCleave);
 				fMinMax = 0.0;
+				if(m_bQuickAcetyl && lStart == 0 && dNt == 0.0 && m_iCurrentRound < 4)	{
+					m_pScore->m_seqUtil.m_pdAaMod['['] = 42.010565;
+					m_pScore->m_seqUtilAvg.m_pdAaMod['['] = 42.0;
+					bFirstAcetyl = true;
+				}
 				do	{
 					cValue = m_pSeq[lEnd+1];
 					m_pSeq[lEnd+1] = '\0';
 					pyro_check(*(m_pSeq+lStart));
-					m_pScore->set_pos(lStart);
-					if(bIsFirst || m_semiState.is_active())	{
+					if(bIsFirst || m_semiState.m_bActive)	{
 						m_pScore->set_seq(m_pSeq+lStart,lStart == 0,lEnd == lLength-1,lEnd-lStart+1,lStart);
 					}
 					else	{
@@ -2801,8 +2914,41 @@ bool mprocess::score(const msequence &_s)
 	* was moved outside of this test.
 	*/
 				} while(m_semiState.next(lStart,lEnd));
+				if(bFirstAcetyl)	{
+					m_pScore->m_seqUtil.m_pdAaMod['['] = 0.0;
+					m_pScore->m_seqUtilAvg.m_pdAaMod['['] = 0.0;
+					bFirstAcetyl = false;
+				}
 				if(fMinMax - m_pScore->m_fMaxMass > 100.0)	{
 					break;
+				}
+				if(!m_semiState.m_bActive && m_bQuickAcetyl && lStart == 0 && m_pSeq[0] == 'M' && dNt == 0.0 && m_iCurrentRound < 4)	{
+					lRagged = 1;
+					while(lRagged <= 2)	{
+						lStart = lRagged;
+						m_pScore->m_seqUtil.m_pdAaMod['['] = 42.010565;
+						m_pScore->m_seqUtilAvg.m_pdAaMod['['] = 42.0;
+
+						cValue = m_pSeq[lEnd+1];
+						m_pSeq[lEnd+1] = '\0';
+						m_pScore->set_seq(m_pSeq+lStart,lStart == 0,lEnd == lLength-1,lEnd-lStart+1,lStart);
+						m_pSeq[lEnd+1] = cValue;
+						bIsFirst = true;
+		/*
+		* use the m_pScore state machine to obtain allowed modified peptides that have
+		* the same sequence. then use create_score to score relavent spectra
+		*/
+						while(m_pScore->load_next())	{
+							m_tPeptideCount += m_pScore->m_State.m_lEqualsS;
+							m_bPermute = false;
+							m_bPermuteHigh = false;
+							create_score(_s,lStart,lEnd,lMissedCleaves - 1,true);
+						}
+						lStart = 0;
+						m_pScore->m_seqUtil.m_pdAaMod['['] = 0.0;
+						m_pScore->m_seqUtilAvg.m_pdAaMod['['] = 0.0;
+						lRagged++;
+					}
 				}
 			}
 			lLastCleave = lEnd;
@@ -2844,7 +2990,7 @@ bool mprocess::score(const msequence &_s)
 
 __inline__ bool mprocess::pyro_check(const char _c)
 {
-	if(m_pScore->m_seqUtil.m_pdAaMod['['] != 0.0)	{
+	if(m_pScore->m_seqUtil.m_pdAaMod['['] != 0.0 || !m_bQuickPyro)	{
 		m_pyroState.m_bPyro = false;
 		return false;
 	}
@@ -2905,8 +3051,9 @@ bool mprocess::score_each_sequence()
 {
 	size_t tLength = m_svrSequences.m_pCol->size();
 	size_t a = 0;
-	map <string,string>::iterator itMod;
-	string strMods;
+//	map <string,string>::iterator itMod;
+//	string strMods;
+	string strValue;
 /*
  * go through the msequenceCollection object and score each msequence
  */
@@ -2946,7 +3093,7 @@ bool mprocess::score_each_sequence()
  * means that the C-terminus may be modified by -1 dalton. each potential modification
  * is used separately. the protein sequence is cleaved using [X]|[X].
  */
-bool mprocess::score_terminus(const string &_s)
+bool mprocess::score_terminus_single(const string &_s)
 {
 	if(_s.size() == 0)	{
 		return false;
@@ -3132,7 +3279,7 @@ bool mprocess::spectra()
 		pValue[0] = '\0';
 		ifTest.getline(pValue,1024,'\r');
 		ifTest.close();
-		if(strlen(pValue) == 1023)	{
+		if(strlen(pValue) == 1023 && !strchr(pValue,'<'))	{
 			cout << "\nFailed to read spectrum file: " << strValue.c_str() << "\n";
 			cout << "Most likely: an unsupported data file type:\nUse dta, pkl, mgf, mzdata (v.1.05) or mzxml (v.2.0) files ONLY! (3)\n\n";
 			cout.flush();
@@ -3152,6 +3299,7 @@ bool mprocess::spectra()
 	if(bCommon)	{
 		loadcmn ldCmn;
 		if(ldCmn.open(strValue))	{
+			cout << " (cmn).";
 			while(ldCmn.get(spCurrent))	{
 				m_tSpectraTotal++;
 				lLoaded++;
@@ -3179,6 +3327,7 @@ bool mprocess::spectra()
 		string strV;
 		m_xmlValues.getpath(strV);
 		if(ldGaml.open(strV))	{
+			cout << " (gaml).";
 			ldGaml.get();
 			m_tSpectraTotal = m_vSpectra.size();
 			bContinue = false;
@@ -3209,6 +3358,7 @@ bool mprocess::spectra()
 		m_specCondition.use_condition(false);
 		loadgaml ldGaml(m_vSpectra, m_specCondition, *m_pScore);
 		if(ldGaml.open(strValue))	{
+			cout << " (gaml).";
 			ldGaml.get();
 			m_tSpectraTotal = m_vSpectra.size();
 			bContinue = false;
@@ -3222,6 +3372,7 @@ bool mprocess::spectra()
 	if(bContinue)	{
 		loadmatrix ldMatrix;
 		if(ldMatrix.open(strValue))	{
+			cout << " (mgf).";
 			while(ldMatrix.get(spCurrent))	{
 				m_tSpectraTotal++;
 				lLoaded++;
@@ -3248,6 +3399,7 @@ bool mprocess::spectra()
 	if(bContinue)	{
 		loadpkl ldPkl;
 		if(ldPkl.open(strValue))	{
+			cout << " (pkl).";
 			while(ldPkl.get(spCurrent))	{
 				m_tSpectraTotal++;
 				lLoaded++;
@@ -3282,6 +3434,7 @@ bool mprocess::spectra()
     loadmzxml ldMzxml( m_vSpectra, m_specCondition, *m_pScore);
     if(ldMzxml.open(strValue))	{
       //Ce .get est different, il va chercher tous les spectres du fichier.
+			cout << " (mzXML).";
       ldMzxml.get();
 	  m_tSpectraTotal = m_vSpectra.size();
       bContinue = false;
@@ -3294,9 +3447,10 @@ bool mprocess::spectra()
    */
   if(bContinue)	{
    loadmzml ldMzml( m_vSpectra, m_specCondition, *m_pScore);
-    if(ldMzml.open(strValue))  {
+   if(ldMzml.open(strValue))  {
       //Ce .get est different, il va chercher tous les spectres du fichier.
-      ldMzml.get();
+ 			cout << " (mzML).";
+     ldMzml.get();
 	  m_tSpectraTotal = m_vSpectra.size();
       bContinue = false;
     }
@@ -3305,7 +3459,8 @@ bool mprocess::spectra()
    loadmzdata ldMzdata( m_vSpectra, m_specCondition, *m_pScore);
     if(ldMzdata.open(strValue))  {
       //Ce .get est different, il va chercher tous les spectres du fichier.
-      ldMzdata.get();
+ 			cout << " (mzData).";
+     ldMzdata.get();
 	  m_tSpectraTotal = m_vSpectra.size();
       bContinue = false;
     }
@@ -3328,6 +3483,7 @@ bool mprocess::spectra()
 			return false;
 		}
 		else	{
+			cout << " (dta).";
 			while(ldSpec.get(spCurrent))	{
 				m_tSpectraTotal++;
 				lLoaded++;
@@ -3375,6 +3531,20 @@ bool mprocess::load_sequences(void)
 		a = 0;
 		while(a < saxFile.m_vseqBest.size())	{
 			if(m_mapSequences.find(saxFile.m_vseqBest[a].m_tUid) == m_mapSequences.end())	{
+				short int iPath = saxFile.m_vseqBest[a].m_siPath;
+				string strPath = saxFile.m_vstrPaths[iPath];
+				size_t b = 0;
+				while(b < m_vstrPaths.size())	{
+					if(strPath == m_vstrPaths[b])	{
+						saxFile.m_vseqBest[a].m_siPath = (short int)b;
+						break;
+					}
+					b++;
+				}
+				if(b == m_vstrPaths.size())	{
+					m_vstrPaths.push_back(strPath);
+					saxFile.m_vseqBest[a].m_siPath = (short int)(m_vstrPaths.size() - 1);
+				}
 				m_vseqBest.push_back(saxFile.m_vseqBest[a]);
 				m_mapSequences.insert(SEQMAP::value_type(saxFile.m_vseqBest[a].m_tUid,saxFile.m_vseqBest[a].m_strSeq));
 			}
@@ -3401,6 +3571,7 @@ bool mprocess::spectra_force(string &_t,string &_v)
 	mspectrum spCurrent;
 	long lLoaded = 0;
 	long lLimit = 2000;
+	cout << " (" << _t.c_str() << ").";
 	if(_t == "gaml")	{
 		bool bState = m_specCondition.m_bCondition;
 		m_specCondition.use_condition(false);
@@ -3718,7 +3889,7 @@ bool mprocess::subtract(void)
 		}
 		itStart++;
 	}
-	m_tContrasted = m_vSpectra.size() - vTemp.size();
+	m_tContrasted = (double)(m_vSpectra.size() - vTemp.size());
 	m_vSpectra.clear();
 	m_vSpectra.reserve(vTemp.size() + 1);
 	m_vSpectra = vTemp;
@@ -3923,111 +4094,120 @@ bool mprocess::load_annotation(mprocess *_p)
 	return true;
 }
 
-/*bool mprocess::contrast(void)
-{
-	size_t a = 0;
-	size_t tSize = m_vSpectra.size();
-	size_t tSpecSize = 0;
-	size_t b = 0;
-	size_t c = 0;
-	long lValue = 0;
-	size_t lSize = 200;
-	float *pArray = new float[lSize];
-	float *pAA = new float[lSize];
-	b = 0;
-	while(b < lSize)	{
-		pAA[b] = 0;
-		b++;
+bool mprocess::serialize(void)
+{	
+	if(!m_bSerialize)	{
+		return true;
 	}
-	pAA[71] = 1;
-	pAA[115] = 1;
-	pAA[103] = 1;
-	pAA[115] = 1;
-	pAA[129] = 1;
-	pAA[147] = 1;
-	pAA[57] = 1;
-	pAA[137] = 1;
-	pAA[113] = 1;
-	pAA[128] = 1;
-	pAA[113] = 1;
-	pAA[131] = 1;
-	pAA[114] = 1;
-	pAA[97] = 1;
-	pAA[128] = 1;
-	pAA[156] = 1;
-	pAA[87] = 1;
-	pAA[101] = 1;
-	pAA[180] = 1;
-	pAA[99] = 1;
-	pAA[186] = 1;
-	pAA[163] = 1;
-
-	float fMax;
-	vector<string> vStrings;
+	string strKey = "output, path";
 	string strValue;
-	char pValue[256];
-	b = 0;
-	while(b < lSize)	{
-		vStrings.push_back(strValue);
-		b++;
+	if(!m_xmlValues.get(strKey,strValue))	{
+		return false;
 	}
-	ofstream ofLog;
-	long lLowCount = 0;
-	ofLog.open("c:\\thegpm\\autocor.csv");
-	vector<mspectrum>::iterator itStart = m_vSpectra.begin();
-	while(itStart != m_vSpectra.end())	{
-		b = 0;
-		while(b < lSize)	{
-			pArray[b] = 0;
-			b++;
-		}
-		b = 0;
-		tSpecSize = itStart->m_vMI.size();
-		fMax = 0;
-		while(b < tSpecSize)	{
-			c = 0;
-			while(c < tSpecSize)	{
-				if(c != b)	{
-					lValue = (long)(0.5+fabs(itStart->m_vMI[b].m_fM - itStart->m_vMI[c].m_fM));
-					if(lValue < lSize && lValue > 50)	{
-						pArray[lValue] += itStart->m_vMI[b].m_fI * itStart->m_vMI[c].m_fI;
-						if(pArray[lValue] > fMax)	{
-							fMax = pArray[lValue];
-						}
-					}
-				}
-				c++;
-			}
-			b++;
-		}
-		b = 0;
-		float fValue = 0.0;
-		while(b < lSize)	{
-			sprintf(pValue,"%f,",pArray[b]*pAA[b]/fMax);
-			if(pArray[b]*pAA[b]/fMax > fValue)	{
-				fValue = pArray[b]*pAA[b]/fMax;
-			}
-			vStrings[b] += pValue;
-			b++;
-		}
-		ofLog  << itStart->m_tId << "[" << fValue << "],";
-		if(fValue < 0.3 && itStart->m_fZ < 2.5)	{
-			itStart = m_vSpectra.erase(itStart);
-			lLowCount++;
-		}
-		else	{
-			itStart++;
-		}
+	FILE *pFile = fopen(strValue.c_str(),"wb");
+	if(!pFile)	{
+		cout << "Warning: serialization did not occur.\n";
+		cout.flush();
+		return false;
 	}
-	ofLog << "0\n";
-	b = 0;
-	cout << "<BR>" << lLowCount << "/" << m_vSpectra.size() << "<BR>";
-	while(b < lSize)	{
-		ofLog << vStrings[b] << "0\n";
-		b++;
+	vector<mspectrum>::iterator itS = m_vSpectra.begin();
+	vector<mspectrum>::iterator itE = m_vSpectra.end();
+	vector<mi>::iterator itMI;
+	vector<mi>::iterator itMIE;
+	size_t tLength = m_vSpectra.size();
+	fwrite((const void*)&tLength,sizeof(size_t),1,pFile);
+	float fV = 0.0;
+	while(itS != itE)	{
+		tLength = itS->m_vMI.size();
+		fwrite((const void*)&(itS->m_tId),sizeof(size_t),1,pFile);
+		fwrite((const void*)&tLength,sizeof(size_t),1,pFile);
+		itMI = itS->m_vMI.begin();
+		itMIE = itS->m_vMI.end();
+		while(itMI != itMIE)	{
+			fwrite((const void*)&(itMI->m_fM),sizeof(float),1,pFile);
+			fwrite((const void*)&(itMI->m_fI),sizeof(float),1,pFile);
+			itMI++;
+		}
+		itS++;
 	}
-	delete pArray;
-	delete pAA;
-	ofLog.close();
+	fclose(pFile);
 	return true;
-}*/
+}
+
+bool mprocess::restore(void)
+{
+	if(!m_bSerialize)	{
+		return true;
+	}
+	string strKey = "output, path";
+	string strValue;
+	if(!m_xmlValues.get(strKey,strValue))	{
+		return false;
+	}
+	FILE *pFile = fopen(strValue.c_str(),"rb");
+	if(!pFile || feof(pFile))	{
+		cout << "Warning: could not find serialization file \"" << strValue.c_str() << "\", spectrum restoration not performed.\n";
+		cout.flush();
+		return false;
+	}
+	vector<mspectrum>::iterator itS = m_vSpectra.begin();
+	vector<mspectrum>::iterator itE = m_vSpectra.end();
+	size_t tLength = 0;
+	fread((void *)&tLength,sizeof(size_t),1,pFile);
+	if(tLength == 0 || feof(pFile))	{
+		cout << "Warning: could not find serialization file \"" << strValue.c_str() << "\" appears to be corrupt.\n";
+		cout.flush();
+		fclose(pFile);
+		return false;
+	}
+	size_t tL = 0;
+	size_t tId = 0;
+	size_t a = 0;
+	size_t b = 0;
+	map<size_t,size_t> mapId;
+	pair<size_t,size_t> pairId;
+	while(itS < itE)	{
+		pairId.first = itS->m_tId;
+		pairId.second = a;
+		mapId.insert(pairId);
+		a++;
+		itS++;
+	}
+	vector<mi> vMI;
+	mi miV;
+	float fV;
+	a = 0;
+	while(a < tLength && !feof(pFile))	{
+		vMI.clear();
+		fread((void *)&tId,sizeof(size_t),1,pFile);
+		fread((void *)&tL,sizeof(size_t),1,pFile);
+		b = 0;
+		while(b < tL && !feof(pFile))	{
+			fread((void *)&fV,sizeof(float),1,pFile);
+			miV.m_fM = fV;
+			fread((void *)&fV,sizeof(float),1,pFile);
+			miV.m_fI = fV;
+			vMI.push_back(miV);
+			b++;
+		}
+		if(mapId.find(tId) != mapId.end())	{
+			m_vSpectra[mapId.find(tId)->second].m_vMI = vMI;
+		}
+		a++;
+	}
+	fclose(pFile);
+	return true;
+}
+
+bool mprocess::removeMI(void)
+{
+	if(!m_bSerialize)	{
+		return true;
+	}
+	size_t a = 0;
+	while(a < m_vSpectra.size())	{
+		m_vSpectra[a].m_vMI.clear();
+		a++;
+	}
+	return true;
+}

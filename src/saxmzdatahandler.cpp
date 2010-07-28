@@ -86,6 +86,12 @@ void SAXMzdataHandler::startElement(const XML_Char *el, const XML_Char **attr)
 		}
 		else if (!strcmp(name, "mz") )
 			m_precursorMz =	atof(value);
+		else if (!strcmp(name, "Charge State")){
+			m_precursorCharge = atoi(value);
+		}
+		else if (!strcmp(name, "Mass To Charge Ratio") ){
+			m_precursorMz =	atof(value);
+		}
 		else if (!strcmp(name, "ChargeState")){
 			m_precursorCharge = atoi(value);
 		}

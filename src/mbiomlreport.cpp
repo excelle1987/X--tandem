@@ -153,7 +153,7 @@ void mbiomlreport::setpath(string &_s)
 
 }
 
-bool mbiomlreport::write(vector<msequence> &_v)
+bool mbiomlreport::write(vector<msequence> &_v,vector<string> &_p)
 {
 	ofstream ofOut;
 	ofOut.open(m_strPath.c_str());
@@ -170,7 +170,7 @@ bool mbiomlreport::write(vector<msequence> &_v)
 	while(a < tLimit)	{
 		tSize = _v[a].m_strSeq.size();
 		ofOut << "<protein label=\"" << _v[a].m_strDes << "\" uid=\"" << (unsigned long)_v[a].m_tUid << "\">\n";
-		ofOut << "<file URL=\"" << _v[a].m_strPath << "\"/>\n";
+		ofOut << "<file URL=\"" << _p[_v[a].m_siPath] << "\"/>\n";
 		ofOut << "<peptide start=\"1\" end=\"" << (unsigned long)tSize << "\">\n";
 		b = 0;
 		c = 1;

@@ -166,7 +166,7 @@ public:
 	* each element (such as finalising a tree node or writing
 	* output to a file).</p>
 	*/
-	bool write(vector<msequence> &_v);
+	bool write(vector<msequence> &_v,vector<string> &_p);
 
 	/**
 	* Receive notification of character data inside an element.

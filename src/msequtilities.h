@@ -141,6 +141,8 @@ The End
 #include "masscalc.h"
 #include "mmotif.h"
 
+typedef map<size_t,float> nMap;
+
 class msequtilities
 {
 public:
@@ -151,7 +153,9 @@ public:
 
 	bool m_bPotential; // true if potential modifications are to be used
 	bool m_bComplete; // true if complete modifications are to be used
-
+	bool m_bPhosphoSerine;
+	bool m_bPhosphoThreonine;
+	bool m_bPhosphoTyrosine;
 	double m_dAmmonia; // mass of ammonia
 	double m_dProton; // mass of proton
 	double m_dWater; // mass of water
@@ -203,10 +207,11 @@ public:
 
 	double getAaMass(char c, unsigned long t)
 	{
-		double dValue = m_pdAaMass[c];
-		dValue += m_pdAaMod[c];
-		dValue += m_pdAaFullMod[c];
-		dValue += m_pdAaPrompt[c];
+		size_t tC = c;
+		double dValue = m_pdAaMass[tC];
+		dValue += m_pdAaMod[tC];
+		dValue += m_pdAaFullMod[tC];
+		dValue += m_pdAaPrompt[tC];
 
 		if (m_bSequenceMods)
 		{
@@ -222,9 +227,10 @@ public:
 	map<size_t,size_t> m_mapMotifs;
 	map<char,size_t> m_mapMotifMods;
 	SMap m_mapMods;
+	nMap m_mapNeutralLoss;
 	bool m_bPotentialMotif;
 	bool m_bSequenceMods;
-
+	bool m_bPrompt;
 	bool modify_n(const float _f);
 	bool synthesis(const bool _b);
 	bool set_aa_file(string &_p);

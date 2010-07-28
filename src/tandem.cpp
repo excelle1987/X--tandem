@@ -425,13 +425,15 @@ int main(int argc, char** argv)
 			}
 			while(wait == WAIT_TIMEOUT)	{
 				wait = WaitForSingleObject(pHandle[a],dwTime);
-				cout << ".";
-				cout.flush();
-				iTics++;
-				if(iTics > 50)	{
-					cout << "|\n\t\t";
+				if(wait == WAIT_TIMEOUT)	{
+					cout << ".";
 					cout.flush();
-					iTics = 0;
+					iTics++;
+					if(iTics > 50)	{
+						cout << "|\n\t\t";
+						cout.flush();
+						iTics = 0;
+					}
 				}
 			}
 		}
@@ -556,21 +558,25 @@ int main(int argc, char** argv)
 			cout.flush();
 			while(wait == WAIT_TIMEOUT)	{
 				wait = WaitForSingleObject(pHandle[a],dwTime);
-				cout << ".";
-				cout.flush();
-				iTics++;
-				if(iTics > 50)	{
-					cout << "|\n\t\t";
+				if(wait == WAIT_TIMEOUT)	{
+					cout << ".";
 					cout.flush();
-					iTics = 0;
+					iTics++;
+					if(iTics > 50)	{
+						cout << "|\n\t\t";
+						cout.flush();
+						iTics = 0;
+					}
 				}
 			}
 		}
 		else	{
 			while(wait == WAIT_TIMEOUT)	{
-				cout << ".";
-				cout.flush();
 				wait = WaitForSingleObject(pHandle[a],dwTime);
+				if(wait == WAIT_TIMEOUT)	{
+					cout << ":";
+					cout.flush();
+				}
 			}
 			if(a == 1)	{
 				cout << "waiting for " << a+1;
@@ -636,9 +642,9 @@ int main(int argc, char** argv)
 	pProcess[0]->report();
 	size_t tValid = pProcess[0]->get_valid();
 	size_t tUnique = pProcess[0]->get_unique();
-	double dE = pProcess[0]->get_threshold();
-	unsigned long lE = (unsigned long)(0.5+(double)tUnique/(1.0+1.0/dE));
-	unsigned long lEe = (unsigned long)(0.5 + sqrt((double)lE));
+	double dE = pProcess[0]->get_error_estimate();
+	unsigned long lE = (unsigned long)(0.5+dE);
+	unsigned long lEe = (unsigned long)(0.5 + sqrt(dE));
 	if(lEe == 0)	{
 		lEe = 1;
 	}

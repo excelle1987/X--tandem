@@ -158,7 +158,7 @@ public:
 	bool info(XmlParameter &_x);
 	bool masses(msequtilities &_p);
 	bool performance(XmlParameter &_x);
-	bool sequence(mspectrum &_s,const bool _b);
+	bool sequence(mspectrum &_s,const bool _b,vector<string> &_p);
 	bool spectrum(mspectrum &_s);
 	bool start(XmlParameter &_x);
 	bool set_columns(const long _v);

@@ -156,7 +156,7 @@ public:
 	maa(void) { m_cRes = '\0'; m_lPos = 0; m_dMod = 0.0; m_cMut = '\0'; m_dPrompt = 0.0; m_strId.clear();}
 	virtual ~maa(void) { }
 
-	long m_lPos; // the sequence position of the residue (N-terminal = 0)
+	size_t m_lPos; // the sequence position of the residue (N-terminal = 0)
 	double m_dMod; // mass of the modification
 	char m_cRes; // single letter abbreviation for the amino acid
 	char m_cMut; // single letter abbreviation for a discovered point mutation
@@ -204,7 +204,7 @@ public:
 
 	size_t m_lS; // the start position of the peptide in the protein sequence (N-terminus = 0)
 	size_t m_lE; // the end position of the peptide in the protein sequence
-	long m_lMissedCleaves; // missed cleavages
+	size_t m_lMissedCleaves; // missed cleavages
 	float m_fScore; // the convolution score for the peptide
 	float m_fHyper; // the hyper score for the peptide 
 	double m_dMH; // the mass of the peptide + a proton

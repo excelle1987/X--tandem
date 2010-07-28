@@ -212,7 +212,9 @@ msequtilities::msequtilities(masscalc::massType _t)
 	m_bSequenceMods = false;
 	m_mapMods.clear();
 	m_bIsModified = false;
-
+	m_bPrompt = false;
+	m_bPhosphoSerine = false;
+	m_bPhosphoThreonine = false;
 }
 /*
  * clean up the arrays created using the new operator
@@ -392,6 +394,7 @@ bool msequtilities::modify_maybe(string &_s)
 	m_strDefaultMaybe = strValue;
 	fValue = atof(strValue.c_str());
 	char cRes = '\0';
+	double fSum = 0.0;
 	while(fValue != 0.0)	{
 		m_bPotential = true;
 		tAt = _s.find('@',tStart);
@@ -409,12 +412,19 @@ bool msequtilities::modify_maybe(string &_s)
 		}
 		m_pdAaMod[cRes] = fValue;
 		m_pdAaPrompt[cRes] = fPrompt;
+		fSum += fPrompt;
 		tStart = _s.find(',',tAt);
 		if(tStart == _s.npos)
 			break;
 		tStart++;
 		strValue = _s.substr(tStart,_s.size()-tStart);
 		fValue = atof(strValue.c_str());
+	}
+	if(fPrompt == 0.0)	{
+		m_bPrompt = false;
+	}
+	else	{
+		m_bPrompt = true;
 	}
 	return true;
 }
@@ -471,6 +481,18 @@ bool msequtilities::modify_annotation(string &_s)
 		tStart++;
 		strV = strValue.substr(tStart,_s.size()-tStart);
 		fValue = atof(strV.c_str());
+	}
+	m_bPhosphoThreonine = false;
+	if(fabs(m_pdAaMod['t']-79.966331) < 0.1)	{
+		m_bPhosphoThreonine = true;
+	}
+	m_bPhosphoSerine = false;
+	if(fabs(m_pdAaMod['s']-79.966331) < 0.1)	{
+		m_bPhosphoSerine = true;
+	}
+	m_bPhosphoTyrosine = false;
+	if(fabs(m_pdAaMod['y']-79.966331) < 0.1)	{
+		m_bPhosphoTyrosine = true;
 	}
 	return true;
 }

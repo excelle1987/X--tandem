@@ -151,6 +151,7 @@ public:
             m_plEqualsS = new long[m_lSizeEqualsS];
             m_lEqualsS = 0;
             m_lEligibleS = 0;
+			m_bIsPossible = true;
       }
       virtual ~mscorestate(void) {
             if(m_plEqualsS != NULL)
@@ -161,6 +162,7 @@ public:
                   delete m_ppModsS;
       }
       bool m_bStateS; // true if there are more potential sequences
+	  bool m_bIsPossible; // true if a modified state is a potential solution
       double m_dSeqMHS; // M+H mass of the unmodified peptide
       double m_dSeqMHFailedS; // the value of M+H that failed the check_parents test last time through
       long m_lEligibleS; // number of spectra with M+H <= the current modified peptide M+H
@@ -218,6 +220,7 @@ public:
             m_bStateS = true;
             m_lEligibleS = 0;
             m_dSeqMHFailedS = 0.0;
+			m_bIsPossible = true;
             return true;
      }
 /*
