@@ -130,7 +130,6 @@ The End
 
 #ifndef MMOTIF_H
 #define MMOTIF_H
-#include <string.h>
 
 // File version: 2004-06-01
 // File version: 2005-01-01

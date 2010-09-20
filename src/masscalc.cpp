@@ -132,7 +132,6 @@ The End
 
 #include "stdafx.h"
 #include "masscalc.h"
-#include <stdlib.h>
 
 /*
  * Mass calculator class

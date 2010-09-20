@@ -131,8 +131,6 @@ The End
 #ifndef MCLEAVE_H
 #define MCLEAVE_H
 
-#include <string.h>
-
 // File version: 2006-03-10
 /*
  * mcleave is a specialty class meant to store information about protein cleavage specificity

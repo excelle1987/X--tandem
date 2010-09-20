@@ -3483,7 +3483,9 @@ bool mprocess::spectra()
 			return false;
 		}
 		else	{
+		  if (gmyproc()==0) {
 			cout << " (dta).";
+		  }
 			while(ldSpec.get(spCurrent))	{
 				m_tSpectraTotal++;
 				lLoaded++;

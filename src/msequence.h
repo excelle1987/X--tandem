@@ -173,7 +173,7 @@ class msequence
 
 	ar & m_strSeq; // the sequence of the protein in single-letter code
 	ar & m_strDes; // a description of the protein
-	ar & m_strPath; // the path name for the file that contained this sequence
+	ar & m_siPath; // the path name for the file that contained this sequence
 
        ar & m_vDomains; // a vector of identified domains
        ar & m_mapMods;  // a hash map containing fixed modification information
@@ -204,7 +204,6 @@ public:
 	float m_fIntensity;
 	string m_strSeq; // the sequence of the protein in single-letter code
 	string m_strDes; // a description of the protein
-        string m_strPath; // the path name for the file that contained this sequence
 	short int m_siPath; // the path name for the file that contained this sequence
 
 	vector<mdomain>	m_vDomains; // a vector of identified domains

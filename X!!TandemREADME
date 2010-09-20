@@ -8,9 +8,16 @@ For more information about the program, see:
 "X!!Tandem, an improved method for running X!Tandem on Collections of Commodity Computers", 
 Bjornson et. al., Journal of Proteome Research, 2007.
 
-This version of X!!Tandem is based on X!Tandem 08-12-01.  
+This version of X!!Tandem is based on X!Tandem 10-01-01-4.  
 
 Changes:
+
+10-01-01-4:
+
+X!!Tandem has been built and tested against the newest Boost serialization library version 1.44.0.
+
+No additional X!!Tandem features were added.  See the X!Tandem release notes for changes to the base
+Tandem code.
 
 08-12-01:
 

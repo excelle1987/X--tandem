@@ -12,10 +12,10 @@ CXX = g++
 
 
 #uncomment this line if you are using gcc 4.x
-CXXFLAGS = -DOC -O2 -DGCC4 -DPLUGGABLE_SCORING -g -O2 -I/home2/rdb9/Installed/Boost/include/boost-1_33_1 -I/usr/local/cluster/mpi/openmpi-gcc/include -I/usr/lib/openmpi/include
+CXXFLAGS = -DOC -O2 -DGCC4 -DPLUGGABLE_SCORING -g -O2 -I/home2/rdb9/Installed/boost_1_44_0/include -I/usr/local/cluster/mpi/openmpi-gcc/include -I/usr/local/cluster/mpi/openmpi-gcc/include/openmpi
 #CXXFLAGS = -O2 -DGCC4 -DPLUGGABLE_SCORING -DX_P3
 
-LDFLAGS = -lpthread -L/usr/lib/64 -lm -lexpat -L/home2/rdb9/Installed/Boost/lib -lboost_serialization
+LDFLAGS = -lpthread -L/usr/lib/64 -lm -lexpat -L/home2/rdb9/Installed/boost_1_44_0/lib -lboost_serialization
 
 SRCS := $(wildcard *.cpp)
 OBJS := $(patsubst %.cpp,%.o,$(wildcard *.cpp))
@@ -39,7 +39,7 @@ $(EXECUTABLE): $(DEPS) $(OBJS)
 
 
 clean:
-	rm -f $(OBJS) $(EXECUTABLE) $(DEPS) *~
+	-rm $(OBJS) $(EXECUTABLE) $(DEPS) *~
 
 explain:
 	@echo "The following info represents the program:"

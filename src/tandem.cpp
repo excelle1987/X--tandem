@@ -255,6 +255,7 @@ int main(int argc, char** argv)
 		delete pProcess;
 		exit(1);
 	}
+	pProcess[0]->serialize(); // RDB not sure about this FIX
 	if (gmyproc()==0) {
 	cout << "Spectra matching criteria = " << (unsigned long)pProcess[0]->m_vSpectra.size() << "\n";
 	cout.flush();
@@ -618,10 +619,10 @@ int main(int argc, char** argv)
 	}
 	while(a < dCount)	{
 		if(a == 1)	{
-			cout << "\tfrom " << a+1;
+		  cout << "\tfrom " << a+1 << " ";
 		}
 		else	{
-			cout << a+1;
+		  cout << a+1 << " ";
 		}
 		cout.flush();
 		if(!pProcess[0]->add_spectra(pProcess[a]->m_vSpectra))	{

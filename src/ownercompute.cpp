@@ -155,6 +155,12 @@ The End
 #include <string>
 #include <sstream>
 
+/* This is necessary because of a conflict between C++ headers and mpi headers
+   See the comment in mpicxx.h
+*/
+#undef SEEK_SET
+#undef SEEK_CUR
+#undef SEEK_END
 #include "mpi.h"
 
 #define GATHER 1

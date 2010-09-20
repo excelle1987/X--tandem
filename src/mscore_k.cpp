@@ -18,8 +18,8 @@
 #include "msequence.h"
 #include "mspectrum.h"
 #include "msequtilities.h"
-#include "xmlparameter.h"
 #include "mscore_k.h"
+#include "xmlparameter.h"
 
 // Factory instance, registers itself with the mscoremanager.
 static mscorefactory_k factory;
@@ -80,9 +80,6 @@ bool mscore_k::load_param(XmlParameter &_x)
  */
 bool mscore_k::precondition(mspectrum &_s)
 {
-    if (_s.m_vMI.size() == 0)
-        return false;
-
     if (!mscore::precondition(_s))
         return false;
 
@@ -115,14 +112,6 @@ bool mscore_k::add_mi(mspectrum &_s)
 {
     if (!mscore::add_mi(_s))
         return false;
-
-    vmiType vType;
-    if (_s.m_vMI.size() == 0)
-    {
-        // Return value appears to be ignored, so just add empty type.
-        m_vmiType.push_back(vType);
-        return true;
-    }
 
     int iWindowCount = 10;
     float fMaxI = 0;
@@ -169,7 +158,7 @@ bool mscore_k::add_mi(mspectrum &_s)
 
     float fMinCutoff = (float) (0.05 * fMaxI);
 
-    int range = (int) min(endMassMax, iWindowCount + endMass) - startMass;
+    int range = min(endMassMax, iWindowCount + endMass) - startMass;
     if (range > 3000)
         iWindowCount=10;
     else if (range > 2500)
@@ -246,7 +235,9 @@ bool mscore_k::add_mi(mspectrum &_s)
         tempRangeLookup[i] = (float) (sum / 101.0);
     }
 
+    vmiType vType;
     MIType uType;
+
     for (int i = tempLookup.m_start; i < tempLookup.m_end; i++) {
         tempLookup[i] -= tempRangeLookup[i];
         if (tempLookup[i] > 0) {
@@ -281,8 +272,9 @@ double mscore_k::sfactor()
  * Multiply by log(length) to remove length dependence on dot product score
  * Divide by 3.0 to scale score to 1000
  */
-    double dFactor = log((double)m_lSeqLength)*1.0 /
-        (3.0*sqrt((double)m_lSeqLength)); /* change iLenPeptide to tot # of fragment ions? */
+    int lenSeq = (int) strlen(m_pSeq);
+    double dFactor = log((double)lenSeq)*1.0 /
+        (3.0*sqrt((double)lenSeq)); /* change iLenPeptide to tot # of fragment ions? */
     dFactor *= 1000.0;
     return dFactor;
 }
@@ -322,7 +314,7 @@ double mscore_k::dot(unsigned long *_v)
         // has significant performance benefits.
 
         const int step = 5;
-        while (step < itEnd - itType && itType[step].m_lM < m_plSeq[a]) {
+        while (itType + step < itEnd && itType[step].m_lM < m_plSeq[a]) {
             itType += step;
         }
         while(itType != itEnd && itType->m_lM < m_plSeq[a]) {
@@ -361,3 +353,9 @@ double mscore_k::dot(unsigned long *_v)
     *_v = lCount;    
     return (dScore);
 }
+
+// This is a new virtual method in mscore.h.  Web searching simply stubbing it out like this.  RDB 
+float mscore_k::ion_check(const unsigned long _v,const size_t _d)
+{
+  return 0.0;
+} 
