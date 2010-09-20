@@ -160,6 +160,8 @@ The End
 		The pre-existing define statements will be left in place as comments.
 */
 
+#include<string.h>
+
 #define XMLCLASS // to compile with MzData and MzXML classes
 #define XML_STATIC // to statically link the expat libraries
 
